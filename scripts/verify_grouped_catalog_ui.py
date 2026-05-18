@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
 LOGO = ROOT / "MBM LIGHTING LOGO.png"
+FOOTER_LOGO = ROOT / "شعار شركة المطري الرائدة للتجارة المحدودة.png"
 
 
 def main():
@@ -14,6 +15,17 @@ def main():
     checks = {
         "logo image file exists": LOGO.exists(),
         "logo image is used": 'src="./MBM LIGHTING LOGO.png"' in html,
+        "footer company logo exists": FOOTER_LOGO.exists(),
+        "footer company logo is used": 'src="./شعار شركة المطري الرائدة للتجارة المحدودة.png"' in html,
+        "footer logo has no white box": "bg-white/95" not in html,
+        "footer content is constrained": 'data-role="site-footer"' in html and 'data-role="footer-shell"' in html and "max-w-7xl mx-auto" in html,
+        "compact footer exists": 'data-role="site-footer"' in html and "p-4" in html,
+        "footer phone numbers align right": 'data-role="footer-phone"' in html and "text-right" in html,
+        "mobile footer stacks cleanly": "grid-cols-1" in html and "sm:grid-cols-2" in html,
+        "company website appears": "www.almatari-mbm.com" in html,
+        "customer service phone appears": "777525103" in html,
+        "company email appears": "info@almatari-mbm.com" in html,
+        "main office phone appears": "399306" in html,
         "products are grouped by category": "groupProductsByCategory" in html,
         "item number category prefix is used": "getItemCategoryCode" in html,
         "product name category title is used": "getCategoryTitle" in html,
