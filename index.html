@@ -1456,35 +1456,21 @@
 
     // --- Custom MBM Logo Component ---
     const MBMLogo = () => (
-      <div className="flex flex-col items-center justify-center">
-        <div className="flex items-center space-x-1 space-x-reverse text-slate-100">
-          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8" strokeLinejoin="miter">
-            <path d="M15,90 L15,20 L50,65 L85,20 L85,90" />
-          </svg>
-          <div className="relative flex items-center justify-center w-10 h-10">
-            <svg width="35" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8">
-              <path d="M10,90 L10,10 L60,10 C85,10 85,50 60,50 C85,50 85,90 60,90 Z" />
-            </svg>
-            <svg width="15" height="20" viewBox="0 0 100 100" fill="none" className="absolute text-yellow-500 z-10" style={{ top: '10px', left: '12px' }}>
-              <path d="M70,5 L30,50 L60,50 L40,95 L80,45 L50,45 Z" fill="currentColor" />
-            </svg>
-          </div>
-          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8" strokeLinejoin="miter">
-            <path d="M15,90 L15,20 L50,65 L85,20 L85,90" />
-          </svg>
-        </div>
-        <div className="tracking-[0.3em] text-slate-300 font-semibold text-[10px] mt-1 ml-2">LIGHTING</div>
-      </div>
+      <img
+        src="./MBM LIGHTING LOGO.png"
+        alt="MBM Lighting"
+        className="h-16 w-auto object-contain"
+      />
     );
 
     function App() {
-      const [activeTab, setActiveTab] = useState('products');
+      const [activeTab, setActiveTab] = useState('terminology');
 
       return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-yellow-500 selection:text-slate-900" dir="rtl">
           {/* Header */}
-          <header className="bg-slate-950 py-4 px-6 border-b border-slate-800 shadow-xl">
-            <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <header className="bg-slate-950 py-3 px-4 sm:py-4 sm:px-6 border-b border-slate-800 shadow-xl">
+            <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
               <MBMLogo />
               <div className="hidden md:flex flex-col items-end gap-1 text-sm text-slate-400">
                 <span className="flex items-center gap-1 text-yellow-500 font-bold">48V Smart Systems Available</span>
@@ -1494,30 +1480,31 @@
           </header>
 
           {/* Navigation Tabs */}
-          <nav className="bg-slate-900/90 backdrop-blur-md p-3 sticky top-0 z-50 border-b border-slate-800 shadow-lg">
-            <div className="max-w-7xl mx-auto flex space-x-2 space-x-reverse overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+          <nav className="bg-slate-900/95 backdrop-blur-md p-2 sm:p-3 sticky top-0 z-50 border-b border-slate-800 shadow-lg">
+            <div className="max-w-7xl mx-auto grid grid-cols-2 gap-2 sm:flex sm:space-x-2 sm:space-x-reverse sm:overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
               {[
-                { id: 'terminology', label: 'المفاهيم الفنية (Lumen, CRI...)' },
-                { id: 'beam_angle', label: 'الزاوية (Beam Angle)' },
-                { id: 'products', label: 'المنتجات (البحث والفلترة)' },
-                { id: 'smart_system', label: 'الأنظمة الذكية (48V)' }
+                { id: 'terminology', label: 'المفاهيم الفنية (Lumen, CRI...)', shortLabel: 'المفاهيم الفنية' },
+                { id: 'beam_angle', label: 'الزاوية (Beam Angle)', shortLabel: 'زاوية الإضاءة' },
+                { id: 'products', label: 'المنتجات (البحث والفلترة)', shortLabel: 'المنتجات' },
+                { id: 'smart_system', label: 'الأنظمة الذكية (48V)', shortLabel: 'الأنظمة الذكية' }
               ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`whitespace-nowrap px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex-shrink-0 ml-2 ${activeTab === tab.id
+                  className={`min-h-11 whitespace-normal sm:whitespace-nowrap px-3 sm:px-5 py-2.5 rounded-md text-xs sm:text-sm font-semibold leading-snug transition-all duration-200 sm:flex-shrink-0 sm:ml-2 ${activeTab === tab.id
                       ? 'bg-yellow-500 text-slate-900 shadow-md shadow-yellow-500/20'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
                     }`}
                 >
-                  {tab.label}
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               ))}
             </div>
           </nav>
 
           {/* Main Content */}
-          <main className="max-w-7xl mx-auto p-4 md:p-6 mt-4 pb-24">
+          <main className="max-w-7xl mx-auto px-3 py-4 sm:p-4 md:p-6 mt-2 sm:mt-4 pb-24">
             {activeTab === 'terminology' && <TerminologySection />}
             {activeTab === 'beam_angle' && <BeamAngleSection />}
             {activeTab === 'products' && <ProductsSpecSection />}
@@ -1704,21 +1691,88 @@
       );
     }
 
-    // --- 3. Products Spec Section (With Search & Filters) ---
+    // --- 3. Products Spec Section (Grouped Search & Filters) ---
     function ProductsSpecSection() {
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedWatt, setSelectedWatt] = useState('All');
       const [selectedKelvin, setSelectedKelvin] = useState('All');
+      const [expandedGroups, setExpandedGroups] = useState({});
 
-      // Extract unique wattage & kelvin options dynamically based on the exact data
       const wattOptions = [...new Set(mbmProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
       const kelvinOptions = [...new Set(mbmProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
 
-      // Filtering logic
+      const normalizeProductName = (name) => name
+        .replace(/\s*لون\s*\d+\s*$/g, '')
+        .replace(/\s*لون\d+\s*$/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      const getItemCategoryCode = (itemNumber) => {
+        const parts = (itemNumber || '').split('-').filter(Boolean);
+        return parts.length >= 4 ? parts.slice(0, 3).join('-') : itemNumber || 'غير مصنف';
+      };
+
+      const categoryTitlesByCode = {
+        '07-001-14': 'قواعد اضاءة كوب',
+        '07-001-01': 'قواعد اضاءة بنل',
+        '07-001-16': 'قواعد اضاءة تراك لايت',
+        '07-001-15': 'قواعد اضاءة مانع توهج',
+        '07-001-06': 'قواعد اضاءة سبوت لايت',
+        '07-001-17': 'قواعد اضاءة ماجناتك',
+        '07-001-18': 'ملحقات وتراكات ماجنتك',
+      };
+
+      const categoryNamePrefixes = [
+        'قواعد اضاءة كوب',
+        'قواعد اضاءة بنل',
+        'قواعد اضاءة تراك لايت',
+        'قواعد اضاءة مانع توهج',
+        'قواعد اضاءة سبوت لايت',
+        'قواعد اضاءة ماجناتك متحرك',
+        'قواعد اضاءة ماجناتك',
+      ];
+
+      const getCategoryTitle = (product, categoryCode) => {
+        const normalizedName = normalizeProductName(product.item_name);
+        const namePrefix = categoryNamePrefixes.find(prefix => normalizedName.startsWith(prefix));
+        if (namePrefix) return namePrefix.replace(' متحرك', '');
+        if (categoryTitlesByCode[categoryCode]) return categoryTitlesByCode[categoryCode];
+        if (normalizedName.includes('درايفر') || normalizedName.includes('محول طاقة')) return 'درايفرات 48V';
+        if (normalizedName.includes('تراك')) return 'تراكات وملحقات التراك';
+        if (normalizedName.includes('وصلة') || normalizedName.includes('توصيلة')) return 'وصلات التراك';
+        if (normalizedName.includes('مشبك') || normalizedName.includes('صفيحة')) return 'ملحقات تثبيت التراك';
+        if (normalizedName.includes('سلك')) return 'أسلاك التوصيل';
+        return normalizedName.replace(/\s+\d+\s*وات.*$/g, '').replace(/\s+موديل\s+.*$/g, '').trim() || categoryCode;
+      };
+
+      const groupProductsByCategory = (products) => {
+        const groups = [];
+        const groupMap = {};
+
+        products.forEach(product => {
+          const categoryCode = getItemCategoryCode(product.item_number);
+          const key = categoryCode;
+          if (!groupMap[key]) {
+            groupMap[key] = {
+              key,
+              categoryCode,
+              title: getCategoryTitle(product, categoryCode),
+              mainProduct: product,
+              products: [],
+            };
+            groups.push(groupMap[key]);
+          }
+          groupMap[key].products.push(product);
+        });
+
+        return groups;
+      };
+
       const filteredProducts = mbmProducts.filter(p => {
-        const matchesSearch = p.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.item_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.model.toLowerCase().includes(searchTerm.toLowerCase());
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = p.item_name.toLowerCase().includes(term) ||
+          p.item_number.toLowerCase().includes(term) ||
+          p.model.toLowerCase().includes(term);
 
         const matchesWatt = selectedWatt === 'All' || (p.watt !== null && p.watt.toString() === selectedWatt);
         const matchesKelvin = selectedKelvin === 'All' || (p.kelvin !== null && p.kelvin === selectedKelvin);
@@ -1726,16 +1780,69 @@
         return matchesSearch && matchesWatt && matchesKelvin;
       });
 
+      const groupedProducts = groupProductsByCategory(filteredProducts);
+      const expandAllGroups = () => {
+        setExpandedGroups(Object.fromEntries(groupedProducts.map(group => [group.key, true])));
+      };
+      const collapseAllGroups = () => {
+        setExpandedGroups({});
+      };
+      const toggleGroup = (groupKey) => {
+        setExpandedGroups(current => ({
+          ...current,
+          [groupKey]: current[groupKey] !== true,
+        }));
+      };
+      const isGroupExpanded = (groupKey) => expandedGroups[groupKey] === true;
+
+      const renderProductPower = (product) => (
+        product.watt !== null ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-white font-mono font-bold">{product.watt_text || `${product.watt} وات`}</span>
+            {product.lumen !== "-" && (
+              <>
+                <span className="text-xs text-slate-500">|</span>
+                <span className="text-slate-300 font-mono text-sm">{product.lumen} لومن</span>
+              </>
+            )}
+            {product.kelvin && (
+              <>
+                <span className="text-xs text-slate-500">|</span>
+                <span className="text-xs text-slate-400 font-mono">{product.kelvin}</span>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="text-slate-500 text-xs italic">لا ينطبق (ملحق)</div>
+        )
+      );
+
       return (
         <div className="space-y-6 animate-fadeIn">
-          <div className="flex justify-between items-end mb-2">
-            <h2 className="text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">المنتجات (المواصفات الفنية)</h2>
-            <span className="text-sm text-slate-400">({filteredProducts.length}) منتجات</span>
+          <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-4 mb-2">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">المنتجات (المواصفات الفنية)</h2>
+              <div className="mt-2 text-sm text-slate-400">({groupedProducts.length}) فئة / ({filteredProducts.length}) منتج</div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+              <button
+                type="button"
+                onClick={expandAllGroups}
+                className="min-h-10 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
+              >
+                توسيع كل الفئات
+              </button>
+              <button
+                type="button"
+                onClick={collapseAllGroups}
+                className="min-h-10 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-700 transition-colors"
+              >
+                طي كل الفئات
+              </button>
+            </div>
           </div>
 
-          {/* Search & Filters Box */}
-          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 mb-6">
-            {/* Search Input */}
+          <div className="bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-700 shadow-lg grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_12rem_12rem] gap-4 mb-6">
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-400 mb-2">بحث (اسم الصنف، الموديل، أو رقم الصنف)</label>
               <div className="relative">
@@ -1750,8 +1857,7 @@
               </div>
             </div>
 
-            {/* Watt Filter */}
-            <div className="w-full md:w-48">
+            <div className="w-full">
               <label className="block text-xs font-bold text-slate-400 mb-2">تصفية حسب الواط (Watt)</label>
               <select
                 value={selectedWatt}
@@ -1765,8 +1871,7 @@
               </select>
             </div>
 
-            {/* Kelvin Filter */}
-            <div className="w-full md:w-48">
+            <div className="w-full">
               <label className="block text-xs font-bold text-slate-400 mb-2">تصفية حسب اللون (Kelvin)</label>
               <select
                 value={selectedKelvin}
@@ -1781,8 +1886,7 @@
             </div>
           </div>
 
-          {/* Products Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-700 shadow-xl bg-slate-950">
+          <div data-role="desktop-product-table" className="hidden lg:block overflow-x-auto rounded-xl border border-slate-700 shadow-xl bg-slate-950">
             <table className="w-full text-right border-collapse">
               <thead>
                 <tr className="bg-slate-900 border-b-2 border-yellow-500 text-sm">
@@ -1793,97 +1897,133 @@
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product, idx) => (
-                  <tr key={product.id} className={`border-b border-slate-800 hover:bg-slate-800 transition-colors ${idx % 2 === 0 ? 'bg-slate-900/40' : 'bg-transparent'}`}>
-                    <td className="p-4">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 mt-1 bg-slate-800 rounded-lg flex items-center justify-center text-2xl border border-slate-700 shadow-inner shrink-0">
-                          {product.icon}
-                        </div>
-                        <div>
-                          <div className="font-bold text-white text-sm max-w-sm leading-relaxed mb-1.5">{product.item_name}</div>
-                          <div className="flex flex-wrap gap-2">
-                            <span className="text-xs text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20" title="رقم الصنف"># {product.item_number}</span>
-                            {product.model !== "N/A" && product.model !== "وصلة" && product.model !== "زاوية" && (
-                              <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-600" title="الموديل">الموديل: {product.model}</span>
-                            )}
+                {groupedProducts.map((group, idx) => (
+                  <React.Fragment key={group.key}>
+                    <tr className={`border-b border-slate-800 ${idx % 2 === 0 ? 'bg-slate-900/70' : 'bg-slate-900/40'}`}>
+                      <td className="p-4 align-top">
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.key)}
+                          className="w-full flex items-start gap-4 text-right group"
+                          aria-expanded={isGroupExpanded(group.key)}
+                        >
+                          <div className="w-12 h-12 mt-1 bg-slate-800 rounded-lg flex items-center justify-center text-2xl border border-slate-700 shadow-inner shrink-0">
+                            {group.mainProduct.icon}
                           </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      {product.watt !== null ? (
-                        <>
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="text-white font-mono font-bold">{product.watt_text || `${product.watt} وات`}</span>
-                            {product.lumen !== "-" && (
-                              <>
-                                <span className="text-xs text-slate-400">|</span>
-                                <span className="text-slate-300 font-mono text-sm">{product.lumen} لومن</span>
-                              </>
-                            )}
-                            {product.kelvin && (
-                              <>
-                                <span className="text-xs text-slate-400">|</span>
-                                <span className="text-xs text-slate-400 font-mono">{product.kelvin}</span>
-                              </>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                              <span data-role="group-toggle-indicator" className="text-yellow-500 text-lg leading-none">{isGroupExpanded(group.key) ? '−' : '+'}</span>
+                              <span className="font-bold text-white text-sm leading-relaxed">{group.title}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="text-xs text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">الفئة: {group.categoryCode}</span>
+                              <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-600">{group.products.length} منتج فرعي</span>
+                            </div>
                           </div>
-                        </>
-                      ) : (
-                        <div className="text-slate-500 text-xs italic">لا ينطبق (ملحق)</div>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-col gap-1.5">
-                        {product.technical_specs !== "-" ? (
-                          <div className="text-xs text-slate-300 leading-relaxed max-w-md">{product.technical_specs}</div>
-                        ) : (
-                          <span className="text-slate-500 text-xs italic">غير متوفر في البروشورات المرفقة</span>
-                        )}
-                        {product.technical_specs === "-" && product.cri !== "-" && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 w-12">الزاوية:</span>
-                            <span className="text-sm font-mono text-slate-200">{product.beam_angle}</span>
+                        </button>
+                      </td>
+                      <td className="p-4 align-top">{renderProductPower(group.mainProduct)}</td>
+                      <td className="p-4 align-top">
+                        <div className="text-xs text-slate-300 leading-relaxed max-w-md">{group.mainProduct.technical_specs}</div>
+                      </td>
+                      <td className="p-4 align-top text-sm text-slate-400 max-w-xs leading-relaxed">{group.mainProduct.features}</td>
+                    </tr>
+
+                    {isGroupExpanded(group.key) && group.products.map((product) => (
+                      <tr key={product.id} className="border-b border-slate-800 bg-slate-950/80 hover:bg-slate-800/70 transition-colors">
+                        <td colSpan={4} className="p-0">
+                          <div data-role="child-product-row" className="mr-10 pr-5 grid grid-cols-[minmax(260px,1.3fr)_minmax(160px,0.65fr)_minmax(220px,1fr)_minmax(220px,1fr)] gap-3 px-6 py-3 border-r-2 border-yellow-500/40">
+                            <div>
+                              <div className="text-sm text-slate-100 leading-relaxed">{product.item_name}</div>
+                              <div className="mt-1 text-xs text-yellow-500 font-mono"># {product.item_number}</div>
+                            </div>
+                            <div>{renderProductPower(product)}</div>
+                            <div className="text-xs text-slate-400 leading-relaxed">{product.technical_specs}</div>
+                            <div className="text-xs text-slate-400 leading-relaxed">{product.features}</div>
                           </div>
-                        )}
-                        {product.technical_specs === "-" && product.cri !== "-" && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 w-12">CRI:</span>
-                            <span className="text-xs font-bold text-green-400">{product.cri}</span>
-                          </div>
-                        )}
-                        {product.technical_specs === "-" && product.ugr !== "N/A" && product.ugr !== "-" && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 w-12">UGR:</span>
-                            <span className="text-xs font-bold text-blue-400">{product.ugr}</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-slate-400 max-w-xs leading-relaxed">
-                      {product.features !== "-" ? product.features : "غير متوفر في البروشورات المرفقة"}
-                    </td>
-                  </tr>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
 
-            {/* No Results State */}
-            {filteredProducts.length === 0 && (
-              <div className="p-12 text-center flex flex-col items-center justify-center">
-                <span className="text-5xl mb-4 opacity-50">🔍</span>
-                <h3 className="text-xl font-bold text-white mb-2">لم يتم العثور على منتجات</h3>
-                <p className="text-slate-400">لا يوجد منتج يطابق خيارات البحث الحالية.</p>
-                <button
-                  onClick={() => { setSearchTerm(''); setSelectedWatt('All'); setSelectedKelvin('All'); }}
-                  className="mt-4 bg-slate-800 hover:bg-slate-700 text-yellow-500 px-4 py-2 rounded-lg transition-colors border border-slate-600"
-                >
-                  إعادة ضبط الفلاتر
-                </button>
-              </div>
-            )}
           </div>
+
+          <div data-role="mobile-product-groups" className="lg:hidden space-y-3">
+            {groupedProducts.map((group) => (
+              <section key={group.key} className="rounded-xl border border-slate-700 bg-slate-900/80 shadow-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  className="w-full p-4 text-right"
+                  aria-expanded={isGroupExpanded(group.key)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 bg-slate-800 rounded-lg flex items-center justify-center text-2xl border border-slate-700 shrink-0">
+                      {group.mainProduct.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start gap-2">
+                        <span data-role="group-toggle-indicator" className="mt-0.5 text-yellow-500 text-lg leading-none shrink-0">{isGroupExpanded(group.key) ? '−' : '+'}</span>
+                        <h3 className="text-sm font-bold text-white leading-relaxed">{group.title}</h3>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="text-xs text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">الفئة: {group.categoryCode}</span>
+                        <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-600">{group.products.length} منتج فرعي</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                <div className="grid grid-cols-1 gap-3 border-t border-slate-800 px-4 py-3">
+                  <div>
+                    <div className="text-[11px] font-bold text-slate-500 mb-1">الاستهلاك والإضاءة</div>
+                    {renderProductPower(group.mainProduct)}
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold text-slate-500 mb-1">المواصفات الفنية</div>
+                    <p className="text-xs text-slate-300 leading-relaxed">{group.mainProduct.technical_specs}</p>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold text-slate-500 mb-1">ميزات إضافية</div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{group.mainProduct.features}</p>
+                  </div>
+                </div>
+
+                {isGroupExpanded(group.key) && (
+                  <div className="space-y-3 border-t border-slate-800 bg-slate-950/70 p-3">
+                    {group.products.map((product) => (
+                      <article key={product.id} data-role="child-product-row" className="mr-5 border-r-2 border-yellow-500/40 bg-slate-900/70 rounded-lg p-3 pr-4">
+                        <div className="text-sm text-slate-100 leading-relaxed">{product.item_name}</div>
+                        <div className="mt-1 text-xs text-yellow-500 font-mono"># {product.item_number}</div>
+                        <div className="mt-3 grid grid-cols-1 gap-3">
+                          <div>{renderProductPower(product)}</div>
+                          <div className="text-xs text-slate-400 leading-relaxed">{product.technical_specs}</div>
+                          <div className="text-xs text-slate-500 leading-relaxed">{product.features}</div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="rounded-xl border border-slate-700 bg-slate-950 p-8 sm:p-12 text-center flex flex-col items-center justify-center">
+              <span className="text-5xl mb-4 opacity-50">🔍</span>
+              <h3 className="text-xl font-bold text-white mb-2">لم يتم العثور على منتجات</h3>
+              <p className="text-slate-400">لا يوجد منتج يطابق خيارات البحث الحالية.</p>
+              <button
+                onClick={() => { setSearchTerm(''); setSelectedWatt('All'); setSelectedKelvin('All'); }}
+                className="mt-4 bg-slate-800 hover:bg-slate-700 text-yellow-500 px-4 py-2 rounded-lg transition-colors border border-slate-600"
+              >
+                إعادة ضبط الفلاتر
+              </button>
+            </div>
+          )}
         </div>
       );
     }
