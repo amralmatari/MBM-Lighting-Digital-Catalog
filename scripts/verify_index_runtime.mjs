@@ -39,6 +39,7 @@ const runtimeContext = {
   React: {
     createElement: (type, props, ...children) => ({ type, props, children }),
     useState: (initialValue) => [initialValue, () => {}],
+    useEffect: () => {},
   },
   ReactDOM: {
     createRoot: () => ({

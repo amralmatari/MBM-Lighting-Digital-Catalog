@@ -19,7 +19,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
 
     // --- MBM product data from Excel sheet (المواصفات الفنية) ---
     // Source columns: رقم الصنف، اسم الصنف، الموديل، الوات، اللون.
@@ -1470,11 +1470,12 @@
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-yellow-500 selection:text-slate-900" dir="rtl">
           {/* Header */}
           <header className="bg-slate-950 py-3 px-4 sm:py-4 sm:px-6 border-b border-slate-800 shadow-xl">
-            <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
+            <div className="max-w-7xl mx-auto flex items-center gap-4">
               <MBMLogo />
-              <div className="hidden md:flex flex-col items-end gap-1 text-sm text-slate-400">
-                <span className="flex items-center gap-1 text-yellow-500 font-bold">48V Smart Systems Available</span>
-                <span className="flex items-center gap-1">CRI &ge; 90 | UGR &lt; 15</span>
+              <div data-role="header-gold-divider" className="h-12 w-px bg-gradient-to-b from-transparent via-yellow-500 to-transparent shadow-[0_0_16px_rgba(234,179,8,0.35)]" aria-hidden="true"></div>
+              <div className="min-w-0">
+                <p className="text-base sm:text-xl font-bold text-white tracking-normal leading-tight">لكل مساحة نورها</p>
+                <p className="mt-1 text-[11px] sm:text-xs text-yellow-500/80 font-semibold tracking-[0.18em] uppercase">MBM Lighting</p>
               </div>
             </div>
           </header>
@@ -1697,6 +1698,14 @@
       const [selectedWatt, setSelectedWatt] = useState('All');
       const [selectedKelvin, setSelectedKelvin] = useState('All');
       const [expandedGroups, setExpandedGroups] = useState({});
+      const [showScrollTop, setShowScrollTop] = useState(false);
+
+      useEffect(() => {
+        const handleScroll = () => setShowScrollTop(window.scrollY > 480);
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
 
       const wattOptions = [...new Set(mbmProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
       const kelvinOptions = [...new Set(mbmProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
@@ -1794,6 +1803,9 @@
         }));
       };
       const isGroupExpanded = (groupKey) => expandedGroups[groupKey] === true;
+      const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
 
       const renderProductPower = (product) => (
         product.watt !== null ? (
@@ -1922,11 +1934,11 @@
                           </div>
                         </button>
                       </td>
-                      <td className="p-4 align-top">{renderProductPower(group.mainProduct)}</td>
-                      <td className="p-4 align-top">
-                        <div className="text-xs text-slate-300 leading-relaxed max-w-md">{group.mainProduct.technical_specs}</div>
+                      <td colSpan={3} className="p-4 align-middle">
+                        <div className="text-xs text-slate-500 leading-relaxed">
+                          {isGroupExpanded(group.key) ? 'تفاصيل كل منتج فرعي معروضة أسفل الفئة.' : 'قم بتوسيع الفئة لعرض الاستهلاك والمواصفات الفنية لكل منتج فرعي.'}
+                        </div>
                       </td>
-                      <td className="p-4 align-top text-sm text-slate-400 max-w-xs leading-relaxed">{group.mainProduct.features}</td>
                     </tr>
 
                     {isGroupExpanded(group.key) && group.products.map((product) => (
@@ -1977,21 +1989,6 @@
                   </div>
                 </button>
 
-                <div className="grid grid-cols-1 gap-3 border-t border-slate-800 px-4 py-3">
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-500 mb-1">الاستهلاك والإضاءة</div>
-                    {renderProductPower(group.mainProduct)}
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-500 mb-1">المواصفات الفنية</div>
-                    <p className="text-xs text-slate-300 leading-relaxed">{group.mainProduct.technical_specs}</p>
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-500 mb-1">ميزات إضافية</div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{group.mainProduct.features}</p>
-                  </div>
-                </div>
-
                 {isGroupExpanded(group.key) && (
                   <div className="space-y-3 border-t border-slate-800 bg-slate-950/70 p-3">
                     {group.products.map((product) => (
@@ -2024,6 +2021,17 @@
               </button>
             </div>
           )}
+
+          <button
+            type="button"
+            data-role="scroll-to-top"
+            onClick={scrollToTop}
+            className={`fixed bottom-5 left-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-yellow-500/50 bg-slate-950/95 text-2xl font-bold text-yellow-400 shadow-xl shadow-black/30 backdrop-blur transition-all duration-200 hover:bg-yellow-500 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${showScrollTop ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
+            aria-label="الرجوع إلى أعلى الصفحة"
+            title="الرجوع إلى أعلى الصفحة"
+          >
+            ↑
+          </button>
         </div>
       );
     }

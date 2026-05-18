@@ -24,12 +24,17 @@ def main():
         "expand all button exists": "expandAllGroups" in html and "توسيع كل الفئات" in html,
         "collapse all button exists": "collapseAllGroups" in html and "طي كل الفئات" in html,
         "terminology tab is default": "useState('terminology')" in html,
+        "header slogan exists": "لكل مساحة نورها" in html,
+        "header gold divider exists": 'data-role="header-gold-divider"' in html,
+        "old header technical label is removed": "48V Smart Systems Available" not in html,
         "child products render under the model": "group.products.map" in html,
-        "collapsed groups keep model specs visible": "group.mainProduct.technical_specs" in html,
+        "parent rows do not show first child specs": "group.mainProduct.technical_specs" not in html,
+        "parent rows do not show first child power": "renderProductPower(group.mainProduct)" not in html,
         "group toggle indicator is rendered": 'data-role="group-toggle-indicator"' in html,
         "child product rows are indented": 'data-role="child-product-row"' in html and "border-r-2" in html,
         "mobile product cards exist": 'data-role="mobile-product-groups"' in html,
         "desktop product table is hidden on mobile": 'data-role="desktop-product-table"' in html and "hidden lg:block" in html,
+        "scroll to top button exists": 'data-role="scroll-to-top"' in html and "scrollTo" in html,
     }
 
     failed = [name for name, ok in checks.items() if not ok]
