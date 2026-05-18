@@ -1815,6 +1815,16 @@
         '07-001-18': 'ملحقات وتراكات ماجنتك',
       };
 
+      const categoryImagesByTitle = {
+        'قواعد اضاءة كوب': './images/قواعد اضاءة كوب.jpeg',
+        'قواعد اضاءة بنل': './images/قواعد اضاءة بنل.jpeg',
+        'قواعد اضاءة تراك لايت': './images/قواعد اضاءة تراك لايت.jpg',
+        'قواعد اضاءة مانع توهج': './images/قواعد اضاءة مانع توهج.png',
+        'قواعد اضاءة سبوت لايت': './images/قواعد اضاءة سبوت لايت.png',
+        'قواعد اضاءة ماجناتك': './images/قواعد اضاءة ماجناتك .png',
+        'ملحقات وتراكات ماجنتك': './images/ملحقات وتراكات ماجنتك.jpeg',
+      };
+
       const categoryNamePrefixes = [
         'قواعد اضاءة كوب',
         'قواعد اضاءة بنل',
@@ -1837,6 +1847,20 @@
         if (normalizedName.includes('سلك')) return 'أسلاك التوصيل';
         return normalizedName.replace(/\s+\d+\s*وات.*$/g, '').replace(/\s+موديل\s+.*$/g, '').trim() || categoryCode;
       };
+
+      const getCategoryImage = (title) => categoryImagesByTitle[title] || './images/ملحقات وتراكات ماجنتك.jpeg';
+
+      const renderCategoryImage = (group, sizeClass = 'w-14 h-14') => (
+        <div className={`${sizeClass} overflow-hidden rounded-xl border border-slate-600 bg-slate-950 shadow-inner shadow-black/40 shrink-0`}>
+          <img
+            data-role="category-image"
+            src={getCategoryImage(group.title)}
+            alt={group.title}
+            className="h-full w-full object-contain p-1.5 brightness-110 contrast-110 saturate-110 drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)]"
+            loading="lazy"
+          />
+        </div>
+      );
 
       const groupProductsByCategory = (products) => {
         const groups = [];
@@ -2153,6 +2177,9 @@
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">المنتجات (المواصفات الفنية)</h2>
               <div className="mt-2 text-sm text-slate-400">({groupedProducts.length}) فئة / ({filteredProducts.length}) منتج</div>
+              <div data-role="filtered-products-count" className="mt-1 inline-flex rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs font-bold text-slate-300">
+                المنتجات المفلترة: {filteredProducts.length} من {mbmProducts.length}
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-2 lg:flex lg:justify-end">
               <button
@@ -2198,8 +2225,20 @@
                   placeholder="مثال: CY107 أو 07-001..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 rounded-lg py-2.5 pr-10 pl-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg py-2.5 pr-10 pl-11 text-white focus:outline-none focus:border-yellow-500 transition-colors"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    data-role="clear-search"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute inset-y-0 left-0 flex w-10 items-center justify-center text-xl text-slate-400 hover:text-yellow-400"
+                    aria-label="إلغاء البحث"
+                    title="إلغاء البحث"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2253,16 +2292,16 @@
                           className="w-full flex items-start gap-4 text-right group"
                           aria-expanded={isGroupExpanded(group.key)}
                         >
-                          <div className="w-12 h-12 mt-1 bg-slate-800 rounded-lg flex items-center justify-center text-2xl border border-slate-700 shadow-inner shrink-0">
-                            {group.mainProduct.icon}
-                          </div>
+                          {renderCategoryImage(group, 'w-14 h-14 mt-1')}
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1.5">
                               <span data-role="group-toggle-indicator" className="text-yellow-500 text-lg leading-none">{isGroupExpanded(group.key) ? '−' : '+'}</span>
                               <span className="font-bold text-white text-sm leading-relaxed">{group.title}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              <span className="text-xs text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">الفئة: {group.categoryCode}</span>
+                              <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                                الفئة: <span data-role="category-code" dir="ltr" className="font-mono inline-block">{group.categoryCode}</span>
+                              </span>
                               <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-600">{group.products.length} منتج فرعي</span>
                             </div>
                           </div>
@@ -2283,7 +2322,7 @@
                               <div data-role="child-product-row" className="mr-10 pr-5 grid grid-cols-[minmax(240px,1.25fr)_minmax(150px,0.6fr)_minmax(210px,1fr)_minmax(210px,1fr)_minmax(130px,0.45fr)] gap-3 px-6 py-3 border-r-2 border-yellow-500/40">
                                 <div>
                                   <div className="text-sm text-slate-100 leading-relaxed">{product.item_name}</div>
-                                  <div className="mt-1 text-xs text-yellow-500 font-mono"># {product.item_number}</div>
+                                  <div className="mt-1 text-xs text-yellow-500 font-mono"># <span data-role="product-code" dir="ltr" className="inline-block">{product.item_number}</span></div>
                                 </div>
                                 <div>{renderProductPower(product)}</div>
                                 <div className="text-xs text-slate-400 leading-relaxed">{product.technical_specs}</div>
@@ -2333,16 +2372,16 @@
                   aria-expanded={isGroupExpanded(group.key)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 bg-slate-800 rounded-lg flex items-center justify-center text-2xl border border-slate-700 shrink-0">
-                      {group.mainProduct.icon}
-                    </div>
+                    {renderCategoryImage(group, 'w-16 h-16')}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start gap-2">
                         <span data-role="group-toggle-indicator" className="mt-0.5 text-yellow-500 text-lg leading-none shrink-0">{isGroupExpanded(group.key) ? '−' : '+'}</span>
                         <h3 className="text-sm font-bold text-white leading-relaxed">{group.title}</h3>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="text-xs text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">الفئة: {group.categoryCode}</span>
+                        <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                          الفئة: <span data-role="category-code" dir="ltr" className="font-mono inline-block">{group.categoryCode}</span>
+                        </span>
                         <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-600">{group.products.length} منتج فرعي</span>
                       </div>
                     </div>
@@ -2354,7 +2393,7 @@
                     {group.products.map((product) => (
                       <article key={product.id} data-role="child-product-row" className="mr-5 border-r-2 border-yellow-500/40 bg-slate-900/70 rounded-lg p-3 pr-4">
                         <div className="text-sm text-slate-100 leading-relaxed">{product.item_name}</div>
-                        <div className="mt-1 text-xs text-yellow-500 font-mono"># {product.item_number}</div>
+                        <div className="mt-1 text-xs text-yellow-500 font-mono"># <span data-role="product-code" dir="ltr" className="inline-block">{product.item_number}</span></div>
                         <div className="mt-3 grid grid-cols-1 gap-3">
                           <div>{renderProductPower(product)}</div>
                           <div className="text-xs text-slate-400 leading-relaxed">{product.technical_specs}</div>

@@ -7,6 +7,15 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
 LOGO = ROOT / "MBM LIGHTING LOGO.png"
 FOOTER_LOGO = ROOT / "شعار شركة المطري الرائدة للتجارة المحدودة.png"
+CATEGORY_IMAGES = [
+    ROOT / "images" / "قواعد اضاءة بنل.jpeg",
+    ROOT / "images" / "قواعد اضاءة تراك لايت.jpg",
+    ROOT / "images" / "قواعد اضاءة سبوت لايت.png",
+    ROOT / "images" / "قواعد اضاءة كوب.jpeg",
+    ROOT / "images" / "قواعد اضاءة ماجناتك .png",
+    ROOT / "images" / "قواعد اضاءة مانع توهج.png",
+    ROOT / "images" / "ملحقات وتراكات ماجنتك.jpeg",
+]
 
 
 def main():
@@ -31,6 +40,10 @@ def main():
         "customer service phone appears": "777525103" in html,
         "company email appears": "info@almatari-mbm.com" in html,
         "main office phone appears": "399306" in html,
+        "category image files exist": all(path.exists() for path in CATEGORY_IMAGES),
+        "category image map exists": "categoryImagesByTitle" in html and "getCategoryImage" in html,
+        "category images are used": 'data-role="category-image"' in html and all(f'./images/{path.name}' in html for path in CATEGORY_IMAGES),
+        "category icon fallback is not used for group cards": "group.mainProduct.icon" not in html,
         "products are grouped by category": "groupProductsByCategory" in html,
         "item number category prefix is used": "getItemCategoryCode" in html,
         "product name category title is used": "getCategoryTitle" in html,
@@ -38,6 +51,9 @@ def main():
         "panel bases category is explicit": "قواعد اضاءة بنل" in html,
         "groups can be expanded and collapsed": "expandedGroups" in html and "toggleGroup" in html,
         "categories are collapsed by default": "expandedGroups[groupKey] === true" in html,
+        "search clear button exists": 'data-role="clear-search"' in html and "setSearchTerm('')" in html and "×" in html,
+        "filtered products total label exists": 'data-role="filtered-products-count"' in html and "mbmProducts.length" in html and "filteredProducts.length" in html,
+        "product numbers use ltr direction": 'data-role="product-code"' in html and 'data-role="category-code"' in html and 'dir="ltr"' in html,
         "expand all button exists": "expandAllGroups" in html and "توسيع كل الفئات" in html,
         "collapse all button exists": "collapseAllGroups" in html and "طي كل الفئات" in html,
         "export filtered products button exists": "exportFilteredProductsToExcel" in html and "تصدير إلى الإكسل" in html,
