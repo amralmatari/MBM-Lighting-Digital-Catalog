@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MBM Lighting Digital Catalog</title>
+
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-100 font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // --- MBM product data from Excel sheet (المواصفات الفنية) ---
+    // Source columns: رقم الصنف، اسم الصنف، الموديل، الوات، اللون.
+    const mbmProducts = [
+        {
+          "id": 1,
+          "item_number": "07-001-14-001",
+          "item_name": "قواعد اضاءة كوب 7 وات موديل CY107  لون 6500",
+          "model": "CY107",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "6500K",
+          "lumen": "630",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ88*40؛ قص السقف: Φ75",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 2,
+          "item_number": "07-001-14-002",
+          "item_name": "قواعد اضاءة كوب 7 وات موديل CY107 لون 4000",
+          "model": "CY107",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "4000K",
+          "lumen": "630",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ88*40؛ قص السقف: Φ75",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 3,
+          "item_number": "07-001-14-003",
+          "item_name": "قواعد اضاءة كوب 7 وات موديل CY107  لون 3000",
+          "model": "CY107",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "3000K",
+          "lumen": "630",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ88*40؛ قص السقف: Φ75",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 4,
+          "item_number": "07-001-14-004",
+          "item_name": "قواعد اضاءة كوب 12 وات  موديل CY112 لون 6500",
+          "model": "CY112",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "6500K",
+          "lumen": "1000",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ120*45؛ قص السقف: Φ100",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 5,
+          "item_number": "07-001-14-005",
+          "item_name": "قواعد اضاءة كوب 12 وات موديل CY112 لون 4000",
+          "model": "CY112",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "4000K",
+          "lumen": "1000",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ120*45؛ قص السقف: Φ100",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 6,
+          "item_number": "07-001-14-006",
+          "item_name": "قواعد اضاءة كوب 12 وات  موديل CY112 لون 3000",
+          "model": "CY112",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "3000K",
+          "lumen": "1000",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ120*45؛ قص السقف: Φ100",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 7,
+          "item_number": "07-001-14-007",
+          "item_name": "قواعد اضاءة كوب 20 وات موديل CY120 لون 6500",
+          "model": "CY120",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "6500K",
+          "lumen": "1800",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ166*45؛ قص السقف: Φ150",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 8,
+          "item_number": "07-001-14-008",
+          "item_name": "قواعد اضاءة كوب 20 وات موديل CY120 لون 4000",
+          "model": "CY120",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "4000K",
+          "lumen": "1800",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ166*45؛ قص السقف: Φ150",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 9,
+          "item_number": "07-001-14-009",
+          "item_name": "قواعد اضاءة كوب 20 وات موديل CY120 لون 3000",
+          "model": "CY120",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "3000K",
+          "lumen": "1800",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ166*45؛ قص السقف: Φ150",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 10,
+          "item_number": "07-001-14-010",
+          "item_name": "قواعد اضاءة كوب 30 وات موديل CY130 لون 6500",
+          "model": "CY130",
+          "category": "Excel Catalog",
+          "watt": 30,
+          "watt_text": "30 وات",
+          "kelvin": "6500K",
+          "lumen": "2700",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ223*46؛ قص السقف: Φ200",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 11,
+          "item_number": "07-001-14-011",
+          "item_name": "قواعد اضاءة كوب 30 وات موديل CY130 لون 4000",
+          "model": "CY130",
+          "category": "Excel Catalog",
+          "watt": 30,
+          "watt_text": "30 وات",
+          "kelvin": "4000K",
+          "lumen": "2700",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ223*46؛ قص السقف: Φ200",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 12,
+          "item_number": "07-001-14-012",
+          "item_name": "قواعد اضاءة كوب 30 وات موديل CY130 لون 3000",
+          "model": "CY130",
+          "category": "Excel Catalog",
+          "watt": 30,
+          "watt_text": "30 وات",
+          "kelvin": "3000K",
+          "lumen": "2700",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ223*46؛ قص السقف: Φ200",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 13,
+          "item_number": "07-001-14-013",
+          "item_name": "قواعد اضاءة كوب 40 وات موديل CY140 لون 6500",
+          "model": "CY140",
+          "category": "Excel Catalog",
+          "watt": 40,
+          "watt_text": "40 وات",
+          "kelvin": "6500K",
+          "lumen": "3600",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ223*46؛ قص السقف: Φ200",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 14,
+          "item_number": "07-001-14-014",
+          "item_name": "قواعد اضاءة كوب 40 وات موديل CY140 لون 4000",
+          "model": "CY140",
+          "category": "Excel Catalog",
+          "watt": 40,
+          "watt_text": "40 وات",
+          "kelvin": "4000K",
+          "lumen": "3600",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ223*46؛ قص السقف: Φ200",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 15,
+          "item_number": "07-001-14-015",
+          "item_name": "قواعد اضاءة كوب 40 وات موديل CY140 لون 3000",
+          "model": "CY140",
+          "category": "Excel Catalog",
+          "watt": 40,
+          "watt_text": "40 وات",
+          "kelvin": "3000K",
+          "lumen": "3600",
+          "cri": "≥90",
+          "beam_angle": "90°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 90°؛ CRI: ≥90؛ المقاس: Φ223*46؛ قص السقف: Φ200",
+          "features": "اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.",
+          "icon": "🔲"
+        },
+        {
+          "id": 16,
+          "item_number": "07-001-01-022",
+          "item_name": "قواعد اضاءة بنل 7 وات موديل XFX-TD603  لون 6500",
+          "model": "XFX-TD603",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 17,
+          "item_number": "07-001-01-023",
+          "item_name": "قواعد اضاءة بنل 7 وات موديل XFX-TD603  لون 4000",
+          "model": "XFX-TD603",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 18,
+          "item_number": "07-001-01-024",
+          "item_name": "قواعد اضاءة بنل 7 وات موديل XFX-TD603  لون 3000",
+          "model": "XFX-TD603",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 19,
+          "item_number": "07-001-01-025",
+          "item_name": "قواعد اضاءة بنل 9 وات موديل XFX-TD903  لون 6500",
+          "model": "XFX-TD903",
+          "category": "Excel Catalog",
+          "watt": 9,
+          "watt_text": "9 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 20,
+          "item_number": "07-001-01-026",
+          "item_name": "قواعد اضاءة بنل 9 وات موديل XFX-TD903  لون 4000",
+          "model": "XFX-TD903",
+          "category": "Excel Catalog",
+          "watt": 9,
+          "watt_text": "9 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 21,
+          "item_number": "07-001-01-027",
+          "item_name": "قواعد اضاءة بنل 9 وات موديل XFX-TD903  لون 3000",
+          "model": "XFX-TD903",
+          "category": "Excel Catalog",
+          "watt": 9,
+          "watt_text": "9 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 22,
+          "item_number": "07-001-01-028",
+          "item_name": "قواعد اضاءة بنل 12 وات موديل XFX-TD1203  لون 6500",
+          "model": "XFX-TD1203",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "6500K",
+          "lumen": "950",
+          "cri": "≥80",
+          "beam_angle": "110°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 110°؛ CRI: ≥80؛ المقاس: Φ138*32؛ قص السقف: Φ125",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 23,
+          "item_number": "07-001-01-029",
+          "item_name": "قواعد اضاءة بنل 12 وات موديل XFX-TD1203  لون 4000",
+          "model": "XFX-TD1203",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "4000K",
+          "lumen": "950",
+          "cri": "≥80",
+          "beam_angle": "110°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 110°؛ CRI: ≥80؛ المقاس: Φ138*32؛ قص السقف: Φ125",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 24,
+          "item_number": "07-001-01-030",
+          "item_name": "قواعد اضاءة بنل 12 وات موديل XFX-TD1203  لون 3000",
+          "model": "XFX-TD1203",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "3000K",
+          "lumen": "950",
+          "cri": "≥80",
+          "beam_angle": "110°",
+          "ugr": "-",
+          "technical_specs": "زاوية: 110°؛ CRI: ≥80؛ المقاس: Φ138*32؛ قص السقف: Φ125",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 25,
+          "item_number": "07-001-01-031",
+          "item_name": "قواعد اضاءة بنل 15 وات موديل XFX-TD1503  لون 6500",
+          "model": "XFX-TD1503",
+          "category": "Excel Catalog",
+          "watt": 15,
+          "watt_text": "15 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 26,
+          "item_number": "07-001-01-032",
+          "item_name": "قواعد اضاءة بنل 15 وات موديل XFX-TD1503  لون 4000",
+          "model": "XFX-TD1503",
+          "category": "Excel Catalog",
+          "watt": 15,
+          "watt_text": "15 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 27,
+          "item_number": "07-001-01-033",
+          "item_name": "قواعد اضاءة بنل 15 وات موديل XFX-TD1503  لون 3000",
+          "model": "XFX-TD1503",
+          "category": "Excel Catalog",
+          "watt": 15,
+          "watt_text": "15 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: PP؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K/4000K/3000K",
+          "features": "جسم نحيف جداً؛ خامة بلاستيكية بالكامل.",
+          "icon": "◻️"
+        },
+        {
+          "id": 28,
+          "item_number": "07-001-16-001",
+          "item_name": "قواعد اضاءة تراك لايت 20 وات موديل  GY-TL2003 لون 6500",
+          "model": "GY-TL2003",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: COB؛ الحماية: IP20؛ الألوان: 6500K/3000K",
+          "features": "تراك لايت موجه؛ مناسب للمعارض والمطاعم والمحلات؛ جسم من الألمنيوم والبولي كربونيت.",
+          "icon": "🎥"
+        },
+        {
+          "id": 29,
+          "item_number": "07-001-16-002",
+          "item_name": "قواعد اضاءة تراك لايت 20 وات موديل  GY-TL2003 لون 3000",
+          "model": "GY-TL2003",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: COB؛ الحماية: IP20؛ الألوان: 6500K/3000K",
+          "features": "تراك لايت موجه؛ مناسب للمعارض والمطاعم والمحلات؛ جسم من الألمنيوم والبولي كربونيت.",
+          "icon": "🎥"
+        },
+        {
+          "id": 30,
+          "item_number": "07-001-16-003",
+          "item_name": "قواعد اضاءة تراك لايت 30 وات موديل  GY-TL3003 لون 6500",
+          "model": "GY-TL3003",
+          "category": "Excel Catalog",
+          "watt": 30,
+          "watt_text": "30 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: COB؛ الحماية: IP20؛ الألوان: 6500K/3000K",
+          "features": "تراك لايت موجه؛ مناسب للمعارض والمطاعم والمحلات؛ جسم من الألمنيوم والبولي كربونيت.",
+          "icon": "🎥"
+        },
+        {
+          "id": 31,
+          "item_number": "07-001-16-004",
+          "item_name": "قواعد اضاءة تراك لايت 30 وات موديل  GY-TL3003 لون 3000",
+          "model": "GY-TL3003",
+          "category": "Excel Catalog",
+          "watt": 30,
+          "watt_text": "30 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: COB؛ الحماية: IP20؛ الألوان: 6500K/3000K",
+          "features": "تراك لايت موجه؛ مناسب للمعارض والمطاعم والمحلات؛ جسم من الألمنيوم والبولي كربونيت.",
+          "icon": "🎥"
+        },
+        {
+          "id": 32,
+          "item_number": "07-001-16-005",
+          "item_name": "قواعد اضاءة تراك لايت 40 وات موديل  GY-TL4003 لون 6500",
+          "model": "GY-TL4003",
+          "category": "Excel Catalog",
+          "watt": 40,
+          "watt_text": "40 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: COB؛ الحماية: IP20؛ الألوان: 6500K/3000K",
+          "features": "تراك لايت موجه؛ مناسب للمعارض والمطاعم والمحلات؛ جسم من الألمنيوم والبولي كربونيت.",
+          "icon": "🎥"
+        },
+        {
+          "id": 33,
+          "item_number": "07-001-16-006",
+          "item_name": "قواعد اضاءة تراك لايت 40 وات موديل  GY-TL4003 لون 3000",
+          "model": "GY-TL4003",
+          "category": "Excel Catalog",
+          "watt": 40,
+          "watt_text": "40 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: COB؛ الحماية: IP20؛ الألوان: 6500K/3000K",
+          "features": "تراك لايت موجه؛ مناسب للمعارض والمطاعم والمحلات؛ جسم من الألمنيوم والبولي كربونيت.",
+          "icon": "🎥"
+        },
+        {
+          "id": 34,
+          "item_number": "07-001-15-001",
+          "item_name": "قواعد اضاءة مانع توهج 8 وات  XY-TD803 لون 6500",
+          "model": "XY-TD803",
+          "category": "Excel Catalog",
+          "watt": 8,
+          "watt_text": "8 وات",
+          "kelvin": "6500K",
+          "lumen": "600",
+          "cri": "≥90",
+          "beam_angle": "70°",
+          "ugr": "<19",
+          "technical_specs": "زاوية: 70°؛ CRI: ≥90؛ مانع التوهج: UGR<19؛ المقاس: Φ88*46؛ قص السقف: Φ75",
+          "features": "إضاءة مدمجة مانعة للتوهج؛ مصدر ضوء SMD؛ متوفر باللون الأبيض.",
+          "icon": "💡"
+        },
+        {
+          "id": 35,
+          "item_number": "07-001-06-001",
+          "item_name": "قواعد اضاءة سبوت لايت 4 وات موديل  XYTH403  لون 6500",
+          "model": "XYTH403",
+          "category": "Excel Catalog",
+          "watt": 4,
+          "watt_text": "4 وات",
+          "kelvin": "6500K",
+          "lumen": "240",
+          "cri": "≥90",
+          "beam_angle": "20°",
+          "ugr": "<16",
+          "technical_specs": "زاوية: 20°؛ CRI: ≥90؛ مانع التوهج: UGR<16؛ المقاس: Φ69*45؛ قص السقف: Φ55-60",
+          "features": "تصميم شبكي Honeycomb؛ حماية مضاعفة من التوهج وراحة أعلى للعين.",
+          "icon": "💡"
+        },
+        {
+          "id": 36,
+          "item_number": "07-001-06-002",
+          "item_name": "قواعد اضاءة سبوت لايت 4 وات موديل  XYTH403  لون 3000",
+          "model": "XYTH403",
+          "category": "Excel Catalog",
+          "watt": 4,
+          "watt_text": "4 وات",
+          "kelvin": "3000K",
+          "lumen": "240",
+          "cri": "≥90",
+          "beam_angle": "20°",
+          "ugr": "<16",
+          "technical_specs": "زاوية: 20°؛ CRI: ≥90؛ مانع التوهج: UGR<16؛ المقاس: Φ69*45؛ قص السقف: Φ55-60",
+          "features": "تصميم شبكي Honeycomb؛ حماية مضاعفة من التوهج وراحة أعلى للعين.",
+          "icon": "💡"
+        },
+        {
+          "id": 37,
+          "item_number": "07-001-06-003",
+          "item_name": "قواعد اضاءة سبوت لايت 7 وات موديل  XYTH703  لون 6500",
+          "model": "XYTH703",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "6500K",
+          "lumen": "490",
+          "cri": "≥90",
+          "beam_angle": "20°",
+          "ugr": "<16",
+          "technical_specs": "زاوية: 20°؛ CRI: ≥90؛ مانع التوهج: UGR<16؛ المقاس: Φ85*56؛ قص السقف: Φ75",
+          "features": "تصميم شبكي Honeycomb؛ حماية مضاعفة من التوهج وراحة أعلى للعين.",
+          "icon": "💡"
+        },
+        {
+          "id": 38,
+          "item_number": "07-001-06-004",
+          "item_name": "قواعد اضاءة سبوت لايت 7 وات موديل  XYTH703  لون 3000",
+          "model": "XYTH703",
+          "category": "Excel Catalog",
+          "watt": 7,
+          "watt_text": "7 وات",
+          "kelvin": "3000K",
+          "lumen": "490",
+          "cri": "≥90",
+          "beam_angle": "20°",
+          "ugr": "<16",
+          "technical_specs": "زاوية: 20°؛ CRI: ≥90؛ مانع التوهج: UGR<16؛ المقاس: Φ85*56؛ قص السقف: Φ75",
+          "features": "تصميم شبكي Honeycomb؛ حماية مضاعفة من التوهج وراحة أعلى للعين.",
+          "icon": "💡"
+        },
+        {
+          "id": 39,
+          "item_number": "07-001-06-005",
+          "item_name": "قواعد اضاءة سبوت لايت 12 وات موديل  XYTH1203  لون 6500",
+          "model": "XYTH1203",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "6500K",
+          "lumen": "840",
+          "cri": "≥90",
+          "beam_angle": "20°",
+          "ugr": "<16",
+          "technical_specs": "زاوية: 20°؛ CRI: ≥90؛ مانع التوهج: UGR<16؛ المقاس: Φ110*70؛ قص السقف: Φ95-100",
+          "features": "تصميم شبكي Honeycomb؛ حماية مضاعفة من التوهج وراحة أعلى للعين.",
+          "icon": "💡"
+        },
+        {
+          "id": 40,
+          "item_number": "07-001-06-006",
+          "item_name": "قواعد اضاءة سبوت لايت 12 وات موديل  XYTH1203  لون 3000",
+          "model": "XYTH1203",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "3000K",
+          "lumen": "840",
+          "cri": "≥90",
+          "beam_angle": "20°",
+          "ugr": "<16",
+          "technical_specs": "زاوية: 20°؛ CRI: ≥90؛ مانع التوهج: UGR<16؛ المقاس: Φ110*70؛ قص السقف: Φ95-100",
+          "features": "تصميم شبكي Honeycomb؛ حماية مضاعفة من التوهج وراحة أعلى للعين.",
+          "icon": "💡"
+        },
+        {
+          "id": 41,
+          "item_number": "07-001-17-001",
+          "item_name": "قواعد اضاءة ماجناتك 10 وات موديل CXFG20/300 لون 3000",
+          "model": "CXFG20/300",
+          "category": "Excel Catalog",
+          "watt": 10,
+          "watt_text": "10 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "120°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 10W؛ الألوان: 3000K/4000K/6000K؛ زاوية: 120°؛ CRI: Ra≥90؛ المقاس: L300*W22*H44mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 42,
+          "item_number": "07-001-17-002",
+          "item_name": "قواعد اضاءة ماجناتك 10وات موديل CXFG20/300 لون 4000",
+          "model": "CXFG20/300",
+          "category": "Excel Catalog",
+          "watt": 10,
+          "watt_text": "10وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "120°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 10W؛ الألوان: 3000K/4000K/6000K؛ زاوية: 120°؛ CRI: Ra≥90؛ المقاس: L300*W22*H44mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 43,
+          "item_number": "07-001-17-003",
+          "item_name": "قواعد اضاءة ماجناتك 20 وات موديل CXFG20/600 لون 3000",
+          "model": "CXFG20/600",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "120°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 20W؛ الألوان: 3000K/4000K/6000K؛ زاوية: 120°؛ CRI: Ra≥90؛ المقاس: L600*W22*H44mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 44,
+          "item_number": "07-001-17-004",
+          "item_name": "قواعد اضاءة ماجناتك 20 وات موديل CXFG20/600 لون 4000",
+          "model": "CXFG20/600",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "120°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 20W؛ الألوان: 3000K/4000K/6000K؛ زاوية: 120°؛ CRI: Ra≥90؛ المقاس: L600*W22*H44mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 45,
+          "item_number": "07-001-17-005",
+          "item_name": "قواعد اضاءة ماجناتك 18 وات موديل CXDFG20/18 لون 3000",
+          "model": "CXDFG20/18",
+          "category": "Excel Catalog",
+          "watt": 18,
+          "watt_text": "18 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 46,
+          "item_number": "07-001-17-006",
+          "item_name": "قواعد اضاءة ماجناتك 18 وات موديل CXDFG20/18 لون 4000",
+          "model": "CXDFG20/18",
+          "category": "Excel Catalog",
+          "watt": 18,
+          "watt_text": "18 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 47,
+          "item_number": "07-001-17-007",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 12 وات  CXJG20/12 لون 3000",
+          "model": "CXJG20/12",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 48,
+          "item_number": "07-001-17-008",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 12 وات  CXJG20/12 لون 4000",
+          "model": "CXJG20/12",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 49,
+          "item_number": "07-001-17-009",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 18 وات  CXJG20/18 لون3000",
+          "model": "CXJG20/18",
+          "category": "Excel Catalog",
+          "watt": 18,
+          "watt_text": "18",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 50,
+          "item_number": "07-001-17-010",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 18 وات  CXJG20/18 لون4000",
+          "model": "CXJG20/18",
+          "category": "Excel Catalog",
+          "watt": 18,
+          "watt_text": "18",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 51,
+          "item_number": "07-001-17-011",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 12 وات  CXZD20/12- لون3000",
+          "model": "CXZD20/12",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "24°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 12W؛ الألوان: 3000K/4000K؛ زاوية: 24°؛ CRI: Ra≥90؛ المقاس: L220*W22*H105mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 52,
+          "item_number": "07-001-17-012",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 12 وات  CXZD20/12- لون4000",
+          "model": "CXZD20/12",
+          "category": "Excel Catalog",
+          "watt": 12,
+          "watt_text": "12",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "24°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 12W؛ الألوان: 3000K/4000K؛ زاوية: 24°؛ CRI: Ra≥90؛ المقاس: L220*W22*H105mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 53,
+          "item_number": "07-001-17-013",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 18 وات CXZD20/18- لون3000",
+          "model": "CXZD20/18",
+          "category": "Excel Catalog",
+          "watt": 18,
+          "watt_text": "18",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "24°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 18W؛ الألوان: 3000K/4000K؛ زاوية: 24°؛ CRI: Ra≥90؛ المقاس: L330*W22*H105mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 54,
+          "item_number": "07-001-17-014",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 18 وات CXZD20/18- لون4000",
+          "model": "CXZD20/18",
+          "category": "Excel Catalog",
+          "watt": 18,
+          "watt_text": "18",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "24°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 18W؛ الألوان: 3000K/4000K؛ زاوية: 24°؛ CRI: Ra≥90؛ المقاس: L330*W22*H105mm",
+          "features": "نظام مغناطيسي 48V؛ تثبيت قوي؛ قابل للتمديد والتركيب بطرق متعددة.",
+          "icon": "⬛"
+        },
+        {
+          "id": 55,
+          "item_number": "07-001-17-015",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 10 وات CXDX20/10 لون3000",
+          "model": "CXDX20/10",
+          "category": "Excel Catalog",
+          "watt": 10,
+          "watt_text": "10",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "24°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 6W/10W؛ الألوان: 3000K/4000K؛ زاوية: 24°؛ CRI: Ra≥90؛ المقاس: Φ30*H300mm",
+          "features": "وحدة تعليق مغناطيسية 48V؛ تثبيت قوي؛ مناسبة للإضاءة الموجهة فوق الطاولات.",
+          "icon": "⬛"
+        },
+        {
+          "id": 56,
+          "item_number": "07-001-17-016",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 10 وات  CXDX20/10 لون4000",
+          "model": "CXDX20/10",
+          "category": "Excel Catalog",
+          "watt": 10,
+          "watt_text": "10",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "Ra≥90",
+          "beam_angle": "24°",
+          "ugr": ">15",
+          "technical_specs": "القدرة: 6W/10W؛ الألوان: 3000K/4000K؛ زاوية: 24°؛ CRI: Ra≥90؛ المقاس: Φ30*H300mm",
+          "features": "وحدة تعليق مغناطيسية 48V؛ تثبيت قوي؛ مناسبة للإضاءة الموجهة فوق الطاولات.",
+          "icon": "⬛"
+        },
+        {
+          "id": 57,
+          "item_number": "07-001-17-017",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 6 وات CXDX-A07 لون3000",
+          "model": "CXDX-A07",
+          "category": "Excel Catalog",
+          "watt": 6,
+          "watt_text": "6 وات",
+          "kelvin": "3000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 58,
+          "item_number": "07-001-17-018",
+          "item_name": "قواعد اضاءة ماجناتك متحرك 6 وات CXDX-A07 لون4000",
+          "model": "CXDX-A07",
+          "category": "Excel Catalog",
+          "watt": 6,
+          "watt_text": "6 وات",
+          "kelvin": "4000K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: AL؛ CRI: ≥90؛ الألوان: 3000K/4000K",
+          "features": "نظام مغناطيسي 48V؛ وحدة متحركة قابلة للتوجيه؛ تثبيت قوي وتركيب مرن.",
+          "icon": "⬛"
+        },
+        {
+          "id": 59,
+          "item_number": "07-001-18-001",
+          "item_name": "تراك مخفي 63×48×1000 ملم × 1 متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك مخفي؛ الطول: 1 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 60,
+          "item_number": "07-001-18-002",
+          "item_name": "تراك معلق  26 ×51×1000ملم × 1متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك معلق؛ الطول: 1 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 61,
+          "item_number": "07-001-18-003",
+          "item_name": "وصلة تراك ماجنتك 425 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 62,
+          "item_number": "07-001-18-004",
+          "item_name": "وصلة وبطن مستقيمة  تراك ماجنتك 200 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 63,
+          "item_number": "07-001-18-005",
+          "item_name": "وصلة وبطن زاوية مع سلك تراك ماجنتك 285 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 64,
+          "item_number": "07-001-18-006",
+          "item_name": "وصلة زاوية  داخلية مستقيمة تراك ماجنتك 100×100 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 65,
+          "item_number": "07-001-18-007",
+          "item_name": "وصلة زاوية  خارجية  مستقيمة تراك ماجنتك (90) 100×100 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 66,
+          "item_number": "07-001-18-008",
+          "item_name": "وصلة زاوية داخلية + خارجية  تراك ماجنتك 100×100 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 67,
+          "item_number": "07-001-18-009",
+          "item_name": "وصلة رباعية 100×100 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: وصلة تراك مغناطيسي؛ الاستخدام: ربط وتمديد المسار",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 68,
+          "item_number": "07-001-18-010",
+          "item_name": "غطاء زاوية تراك ماجنتك 12×70 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 69,
+          "item_number": "07-001-18-011",
+          "item_name": "مشبك تثبيت تراك ماجنتك 22×50 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 70,
+          "item_number": "07-001-18-012",
+          "item_name": "صفيحة  تثبيت تراك ماجنتك 22×80 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 71,
+          "item_number": "07-001-18-014",
+          "item_name": "سلك توصيل تراك ماجنتك 2000ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 72,
+          "item_number": "07-001-18-015",
+          "item_name": "محول طاقة ( درايفر ) ماجنتك داخلي 100 وات / 230×22×43 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": 100,
+          "watt_text": "100 وات",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النظام: 48V؛ القدرة: 100W؛ المقاس: L230*W22*H43mm",
+          "features": "درايفر داخلي لنظام التراك المغناطيسي 48V.",
+          "icon": "🔲"
+        },
+        {
+          "id": 73,
+          "item_number": "07-001-18-016",
+          "item_name": "محول طاقة ( درايفر ) ماجنتك داخلي 200 وات / 230×22×43 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": 200,
+          "watt_text": "200 وات",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النظام: 48V؛ القدرة: 200W؛ المقاس: L350*W22*H43mm",
+          "features": "درايفر داخلي لنظام التراك المغناطيسي 48V.",
+          "icon": "🔲"
+        },
+        {
+          "id": 74,
+          "item_number": "07-001-18-017",
+          "item_name": "محول طاقة ( درايفر ) ماجنتك داخلي 300 وات / 230×22×43 ملم",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": 300,
+          "watt_text": "300 وات",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النظام: 48V؛ القدرة: 300W",
+          "features": "درايفر داخلي لنظام التراك المغناطيسي 48V.",
+          "icon": "🔲"
+        },
+        {
+          "id": 75,
+          "item_number": "07-001-18-018",
+          "item_name": "تراك 1 متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك؛ الطول: 1 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 76,
+          "item_number": "07-001-18-019",
+          "item_name": "تراك 1.5 متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك؛ الطول: 1.5 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 77,
+          "item_number": "07-001-18-020",
+          "item_name": "تراك 2 متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك؛ الطول: 2 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 78,
+          "item_number": "07-001-18-021",
+          "item_name": "توصيلة تراك T",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 79,
+          "item_number": "07-001-18-022",
+          "item_name": "توصيلة تراك L",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 80,
+          "item_number": "07-001-18-023",
+          "item_name": "تراك مخفي 63×48×1000 ملم × 2 متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك مخفي؛ الطول: 2 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 81,
+          "item_number": "07-001-18-024",
+          "item_name": "تراك معلق  26 ×51×1000ملم × 2متر",
+          "model": "N/A",
+          "category": "Excel Catalog",
+          "watt": null,
+          "watt_text": "",
+          "kelvin": null,
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "النوع: تراك معلق؛ الطول: 2 متر",
+          "features": "ملحقات نظام التراك؛ تساعد على التوصيل والتركيب والتمديد حسب احتياج المشروع.",
+          "icon": "🔗"
+        },
+        {
+          "id": 82,
+          "item_number": "07-001-15-002",
+          "item_name": "قواعد اضاءة مانع توهج 15 وات XY-TD1503 لون 6500",
+          "model": "XY-TD1503",
+          "category": "Excel Catalog",
+          "watt": 15,
+          "watt_text": "15 وات",
+          "kelvin": "6500K",
+          "lumen": "1125",
+          "cri": "≥90",
+          "beam_angle": "75°",
+          "ugr": "<19",
+          "technical_specs": "زاوية: 75°؛ CRI: ≥90؛ مانع التوهج: UGR<19؛ المقاس: Φ110*50؛ قص السقف: Φ95",
+          "features": "إضاءة مدمجة مانعة للتوهج؛ مصدر ضوء SMD؛ متوفر باللون الأبيض.",
+          "icon": "💡"
+        },
+        {
+          "id": 83,
+          "item_number": "07-001-15-003",
+          "item_name": "قواعد اضاءة مانع توهج 20 وات  XY-TD2403 لون 6500",
+          "model": "XY-TD2403",
+          "category": "Excel Catalog",
+          "watt": 20,
+          "watt_text": "20 وات",
+          "kelvin": "6500K",
+          "lumen": "-",
+          "cri": "-",
+          "beam_angle": "-",
+          "ugr": "-",
+          "technical_specs": "الخامة: Al+PC؛ CRI: 90؛ نوع الإضاءة: SMD؛ الحماية: IP20؛ الألوان: 6500K",
+          "features": "إضاءة مدمجة مانعة للتوهج؛ مصدر ضوء SMD؛ متوفر باللون الأبيض.",
+          "icon": "💡"
+        },
+        {
+          "id": 84,
+          "item_number": "07-001-15-004",
+          "item_name": "قواعد اضاءة مانع توهج 24 وات XY-TD2403  لون 6500",
+          "model": "XY-TD2403",
+          "category": "Excel Catalog",
+          "watt": 24,
+          "watt_text": "24 وات",
+          "kelvin": "6500K",
+          "lumen": "2190/2600",
+          "cri": "≥90",
+          "beam_angle": "60°",
+          "ugr": "<19",
+          "technical_specs": "زاوية: 60°؛ CRI: ≥90؛ مانع التوهج: UGR<19؛ المقاس: Φ160*58؛ قص السقف: Φ145",
+          "features": "إضاءة مدمجة مانعة للتوهج؛ مصدر ضوء SMD؛ متوفر باللون الأبيض.",
+          "icon": "💡"
+        }
+      ];
+
+    // --- Custom MBM Logo Component ---
+    const MBMLogo = () => (
+      <div className="flex flex-col items-center justify-center">
+        <div className="flex items-center space-x-1 space-x-reverse text-slate-100">
+          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8" strokeLinejoin="miter">
+            <path d="M15,90 L15,20 L50,65 L85,20 L85,90" />
+          </svg>
+          <div className="relative flex items-center justify-center w-10 h-10">
+            <svg width="35" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8">
+              <path d="M10,90 L10,10 L60,10 C85,10 85,50 60,50 C85,50 85,90 60,90 Z" />
+            </svg>
+            <svg width="15" height="20" viewBox="0 0 100 100" fill="none" className="absolute text-yellow-500 z-10" style={{ top: '10px', left: '12px' }}>
+              <path d="M70,5 L30,50 L60,50 L40,95 L80,45 L50,45 Z" fill="currentColor" />
+            </svg>
+          </div>
+          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8" strokeLinejoin="miter">
+            <path d="M15,90 L15,20 L50,65 L85,20 L85,90" />
+          </svg>
+        </div>
+        <div className="tracking-[0.3em] text-slate-300 font-semibold text-[10px] mt-1 ml-2">LIGHTING</div>
+      </div>
+    );
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('products');
+
+      return (
+        <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-yellow-500 selection:text-slate-900" dir="rtl">
+          {/* Header */}
+          <header className="bg-slate-950 py-4 px-6 border-b border-slate-800 shadow-xl">
+            <div className="max-w-7xl mx-auto flex justify-between items-center">
+              <MBMLogo />
+              <div className="hidden md:flex flex-col items-end gap-1 text-sm text-slate-400">
+                <span className="flex items-center gap-1 text-yellow-500 font-bold">48V Smart Systems Available</span>
+                <span className="flex items-center gap-1">CRI &ge; 90 | UGR &lt; 15</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Navigation Tabs */}
+          <nav className="bg-slate-900/90 backdrop-blur-md p-3 sticky top-0 z-50 border-b border-slate-800 shadow-lg">
+            <div className="max-w-7xl mx-auto flex space-x-2 space-x-reverse overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+              {[
+                { id: 'terminology', label: 'المفاهيم الفنية (Lumen, CRI...)' },
+                { id: 'beam_angle', label: 'الزاوية (Beam Angle)' },
+                { id: 'products', label: 'المنتجات (البحث والفلترة)' },
+                { id: 'smart_system', label: 'الأنظمة الذكية (48V)' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`whitespace-nowrap px-5 py-2.5 rounded-md text-sm font-semibold transition-all duration-200 flex-shrink-0 ml-2 ${activeTab === tab.id
+                      ? 'bg-yellow-500 text-slate-900 shadow-md shadow-yellow-500/20'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* Main Content */}
+          <main className="max-w-7xl mx-auto p-4 md:p-6 mt-4 pb-24">
+            {activeTab === 'terminology' && <TerminologySection />}
+            {activeTab === 'beam_angle' && <BeamAngleSection />}
+            {activeTab === 'products' && <ProductsSpecSection />}
+            {activeTab === 'smart_system' && <SmartSystemSection />}
+          </main>
+        </div>
+      );
+    }
+
+    // --- 1. Terminology Section ---
+    function TerminologySection() {
+      const [kelvin, setKelvin] = useState(4000);
+
+      const getKelvinBg = (k) => {
+        if (k <= 3000) return 'linear-gradient(to right, #ff9d00, #ffc773)';
+        if (k <= 4000) return 'linear-gradient(to right, #ffc773, #fff1e0)';
+        if (k <= 5000) return 'linear-gradient(to right, #fff1e0, #e0f0ff)';
+        return 'linear-gradient(to right, #e0f0ff, #a8d5ff)';
+      };
+
+      return (
+        <div className="space-y-8 animate-fadeIn">
+          <div className="bg-gradient-to-l from-slate-800 to-slate-900 p-8 rounded-2xl border border-slate-700">
+            <h2 className="text-3xl font-bold text-white mb-4 border-b border-yellow-500 pb-3 inline-block">افهم الإضاءة بلغة مبسطة</h2>
+            <p className="text-slate-300 max-w-3xl leading-relaxed mb-8">
+              كثيراً ما نشتري الإضاءة بناءً على قوة "الواط" فقط، لكن في عالم إضاءة الـ LED الحديثة، الواط لا يخبرك بكل شيء. إليك أهم المعايير التي تصنع فارقاً حقيقياً في مشروعك أو منزلك:
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Lumen vs Watt */}
+              <div className="bg-slate-800/80 p-6 rounded-xl border border-slate-600">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl text-yellow-400">💡</span>
+                  <h3 className="text-xl font-bold text-white">اللومن (Lumen) مقابل الواط (Watt)</h3>
+                </div>
+                <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                  <strong>ببساطة:</strong> تخيل أن الإضاءة مثل تدفق الماء من خرطوم.
+                  <br /><strong className="text-yellow-400">اللومن</strong> هو "كمية الماء" التي تخرج وتحصل عليها فعلياً.
+                  <br /><strong className="text-red-400">الواط</strong> هو "فاتورة المياه" التي ستدفعها!
+                </p>
+                <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+                  <p className="text-xs text-slate-400">نصيحة MBM:</p>
+                  <p className="text-sm font-semibold text-white">لا تبحث عن الواط الأعلى، ابحث عن اللومن الأعلى بواط أقل (كفاءة الطاقة).</p>
+                </div>
+              </div>
+
+              {/* UGR */}
+              <div className="bg-slate-800/80 p-6 rounded-xl border border-slate-600 relative overflow-hidden">
+                <div className="absolute top-0 left-0 bg-yellow-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-br-lg z-10">ميزة حصرية</div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl text-blue-400">👁️</span>
+                  <h3 className="text-xl font-bold text-white">مانع التوهج (UGR)</h3>
+                </div>
+                <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                  <strong>ببساطة:</strong> هو مؤشر قياس إزعاج الضوء للعين (الزغللة). كلما قل الرقم، كانت الإضاءة أريح للعين ولا تلاحظ مصدر الضوء مباشرة.
+                </p>
+                <div className="flex gap-2 text-center text-xs font-bold">
+                  <div className="flex-1 bg-red-900/30 text-red-400 p-2 rounded border border-red-900/50">UGR &gt; 22<br />(مزعج للعين)</div>
+                  <div className="flex-1 bg-green-900/30 text-green-400 p-2 rounded border border-green-900/50">UGR &lt; 19<br />(مريح / قياسي)</div>
+                  <div className="flex-1 bg-yellow-900/50 text-yellow-400 p-2 rounded border border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.2)]">UGR &lt; 15<br />(ممتاز / منتجات MBM)</div>
+                </div>
+              </div>
+
+              {/* Kelvin Interactive */}
+              <div className="bg-slate-800/80 p-6 rounded-xl border border-slate-600 md:col-span-2">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl text-orange-400">🌡️</span>
+                  <h3 className="text-xl font-bold text-white">لون الإضاءة (Kelvin - CCT)</h3>
+                </div>
+                <p className="text-slate-300 text-sm mb-6">الكيلفن لا يعني قوة الإضاءة، بل يحدد "مزاج" المكان ولون الضوء المنبعث.</p>
+
+                <div className="h-24 rounded-lg mb-6 flex items-center justify-center transition-all duration-500 shadow-inner" style={{ background: getKelvinBg(kelvin) }}>
+                  <span className="bg-slate-900/80 text-white font-bold px-4 py-2 rounded-md backdrop-blur-sm">
+                    مظهر المكان عند {kelvin}K
+                  </span>
+                </div>
+
+                <input
+                  type="range" min="3000" max="6500" step="1000" value={kelvin}
+                  onChange={(e) => setKelvin(e.target.value)}
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer mb-2 bg-slate-700 accent-yellow-500"
+                />
+                <div className="flex justify-between text-xs font-mono text-slate-400 mt-2">
+                  <span className={kelvin <= 3000 ? 'text-yellow-400 font-bold' : ''}>3000K (أصفر دافئ)</span>
+                  <span className={kelvin == 4000 ? 'text-yellow-400 font-bold' : ''}>4000K (شمسي/طبيعي)</span>
+                  <span className={kelvin >= 6000 ? 'text-blue-300 font-bold' : ''}>6000K (أبيض ساطع)</span>
+                </div>
+                <div className="mt-4 p-3 bg-slate-900 rounded border border-slate-700 text-sm text-slate-300">
+                  {kelvin <= 3000 && "💡 الاستخدام الأمثل: الفنادق، غرف النوم، المطاعم الفاخرة. يعطي إحساساً بالدفء والراحة والاسترخاء."}
+                  {kelvin > 3000 && kelvin <= 4000 && "💡 الاستخدام الأمثل: المكاتب، المطابخ، المعارض، المحلات. إضاءة متوازنة تظهر الألوان بوضوح دون إرهاق العين."}
+                  {kelvin > 4000 && "💡 الاستخدام الأمثل: المستشفيات، المستودعات، المواقف. إضاءة تحفز على النشاط والانتباه العالي."}
+                </div>
+              </div>
+
+              {/* CRI */}
+              <div className="bg-slate-800/80 p-6 rounded-xl border border-slate-600 md:col-span-2">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl text-pink-400">🎨</span>
+                  <h3 className="text-xl font-bold text-white">دقة إظهار الألوان (CRI)</h3>
+                </div>
+                <p className="text-slate-300 text-sm mb-6">
+                  هل سبق واشتريت ملابس من محل وكان لونها يبدو مختلفاً عندما خرجت للشمس؟ السبب هو انخفاض الـ CRI.
+                  هذا المؤشر يقيس مدى قدرة اللمبة على إظهار الألوان الحقيقية للأشياء مقارنة بضوء الشمس الطبيعي (CRI 100).
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 bg-slate-900 rounded-lg p-5 text-center border border-slate-700 relative">
+                    <div className="text-6xl mb-3 grayscale opacity-60">🍎👗🛋️</div>
+                    <div className="font-bold text-red-400 text-lg mb-1">CRI &lt; 80 (تجاري عادي)</div>
+                    <div className="text-xs text-slate-400">ألوان باهتة وميتة. غير مناسب لمعارض الديكور والملابس.</div>
+                  </div>
+                  <div className="flex-1 bg-slate-900 rounded-lg p-5 text-center border-2 border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.15)] relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-yellow-500 text-slate-900 text-[10px] font-bold px-2 py-1 rounded-bl-lg">معيار MBM</div>
+                    <div className="text-6xl mb-3 saturate-[1.5]">🍎👗🛋️</div>
+                    <div className="font-bold text-green-400 text-lg mb-1">CRI &ge; 90 (احترافي)</div>
+                    <div className="text-xs text-slate-200">ألوان حقيقية، زاهية وغنية. <strong>ضروري جداً</strong> لمعارض الديكور، الملابس، الفنون والمطاعم.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 2. Beam Angle Section ---
+    function BeamAngleSection() {
+      const [angle, setAngle] = useState(24);
+      const beamWidth = Math.max(10, Math.min(100, (angle / 120) * 100));
+
+      return (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+            <h2 className="text-3xl font-bold text-white mb-2 border-b border-yellow-500 pb-3 inline-block">زاوية الانتشار (Beam Angle) 📐</h2>
+            <p className="text-slate-300 mt-4 mb-8">
+              السر في جمال الإضاءة المعمارية هو اختيار الزاوية الصحيحة.
+              الزاوية الضيقة تبرز التفاصيل (اللوحات، الطاولات)، والزاوية الواسعة تنير المساحات بشكل عام لتجنب الظلال.
+            </p>
+
+            <div className="bg-slate-950 rounded-xl p-8 mb-8 flex flex-col items-center justify-start h-80 relative border border-slate-800 overflow-hidden">
+              <div className="w-8 h-4 bg-slate-200 rounded-b-full z-10 shadow-[0_5px_15px_rgba(255,255,255,0.8)]"></div>
+              <div
+                className="absolute top-8 h-full bg-gradient-to-b from-yellow-200/50 to-transparent transition-all duration-300 ease-out origin-top"
+                style={{ width: `${beamWidth}%`, clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }}
+              ></div>
+              <div className="absolute bottom-8 text-6xl z-10 drop-shadow-2xl transition-all">
+                {angle <= 24 ? '🖼️' : angle <= 60 ? '🛋️' : '🏢'}
+              </div>
+            </div>
+
+            <div className="mb-8 max-w-2xl mx-auto">
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-sm font-medium text-slate-400">حرك الشريط لرؤية تأثير الزاوية:</span>
+                <span className="text-3xl font-bold text-yellow-400 font-mono">{angle}°</span>
+              </div>
+              <input
+                type="range" min="15" max="120" step="1" value={angle}
+                onChange={(e) => setAngle(Number(e.target.value))}
+                className="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-3 font-mono">
+                <span>15° (تراك لايت)</span>
+                <span>24° (مسار مغناطيسي)</span>
+                <span>120° (إضاءة غامرة)</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`p-5 rounded-xl border transition-all ${angle <= 24 ? 'border-yellow-500 bg-slate-900 shadow-[0_0_15px_rgba(234,179,8,0.1)]' : 'border-slate-700 bg-slate-800/50'}`}>
+                <h4 className="font-bold text-white mb-2 text-lg">تركيز عالي (Spot 15° - 24°)</h4>
+                <p className="text-sm text-slate-400">يستخدم لإبراز اللوحات الفنية، المعروضات القيمة في المحلات التجارية، أو إضاءة طاولات الطعام المباشرة.</p>
+              </div>
+              <div className={`p-5 rounded-xl border transition-all ${angle > 24 && angle <= 60 ? 'border-yellow-500 bg-slate-900 shadow-[0_0_15px_rgba(234,179,8,0.1)]' : 'border-slate-700 bg-slate-800/50'}`}>
+                <h4 className="font-bold text-white mb-2 text-lg">انتشار متوسط (Flood 36° - 60°)</h4>
+                <p className="text-sm text-slate-400">مثالي للممرات، إضاءة الغرف المعتدلة، والمكاتب الخاصة. يعطي إضاءة مريحة بدون تركيز حاد.</p>
+              </div>
+              <div className={`p-5 rounded-xl border transition-all ${angle > 60 ? 'border-yellow-500 bg-slate-900 shadow-[0_0_15px_rgba(234,179,8,0.1)]' : 'border-slate-700 bg-slate-800/50'}`}>
+                <h4 className="font-bold text-white mb-2 text-lg">انتشار واسع (Wide 110° - 120°)</h4>
+                <p className="text-sm text-slate-400">لإنارة المساحات المفتوحة بالكامل بشكل متجانس لتجنب الظلال (المستشفيات، الصالات).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 3. Products Spec Section (With Search & Filters) ---
+    function ProductsSpecSection() {
+      const [searchTerm, setSearchTerm] = useState('');
+      const [selectedWatt, setSelectedWatt] = useState('All');
+      const [selectedKelvin, setSelectedKelvin] = useState('All');
+
+      // Extract unique wattage & kelvin options dynamically based on the exact data
+      const wattOptions = [...new Set(mbmProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
+      const kelvinOptions = [...new Set(mbmProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
+
+      // Filtering logic
+      const filteredProducts = mbmProducts.filter(p => {
+        const matchesSearch = p.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.item_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.model.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesWatt = selectedWatt === 'All' || (p.watt !== null && p.watt.toString() === selectedWatt);
+        const matchesKelvin = selectedKelvin === 'All' || (p.kelvin !== null && p.kelvin === selectedKelvin);
+
+        return matchesSearch && matchesWatt && matchesKelvin;
+      });
+
+      return (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="flex justify-between items-end mb-2">
+            <h2 className="text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">المنتجات (المواصفات الفنية)</h2>
+            <span className="text-sm text-slate-400">({filteredProducts.length}) منتجات</span>
+          </div>
+
+          {/* Search & Filters Box */}
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col md:flex-row gap-4 mb-6">
+            {/* Search Input */}
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-400 mb-2">بحث (اسم الصنف، الموديل، أو رقم الصنف)</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500">🔍</span>
+                <input
+                  type="text"
+                  placeholder="مثال: CY107 أو 07-001..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg py-2.5 pr-10 pl-3 text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Watt Filter */}
+            <div className="w-full md:w-48">
+              <label className="block text-xs font-bold text-slate-400 mb-2">تصفية حسب الواط (Watt)</label>
+              <select
+                value={selectedWatt}
+                onChange={(e) => setSelectedWatt(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-500 cursor-pointer"
+              >
+                <option value="All">جميع الاستهلاكات</option>
+                {wattOptions.map(w => (
+                  <option key={w} value={w.toString()}>{w} وات</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Kelvin Filter */}
+            <div className="w-full md:w-48">
+              <label className="block text-xs font-bold text-slate-400 mb-2">تصفية حسب اللون (Kelvin)</label>
+              <select
+                value={selectedKelvin}
+                onChange={(e) => setSelectedKelvin(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-500 cursor-pointer"
+              >
+                <option value="All">جميع الألوان</option>
+                {kelvinOptions.map(k => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Products Table */}
+          <div className="overflow-x-auto rounded-xl border border-slate-700 shadow-xl bg-slate-950">
+            <table className="w-full text-right border-collapse">
+              <thead>
+                <tr className="bg-slate-900 border-b-2 border-yellow-500 text-sm">
+                  <th className="p-4 text-slate-300 font-semibold whitespace-nowrap">الصنف والموديل</th>
+                  <th className="p-4 text-slate-300 font-semibold">الاستهلاك والإضاءة</th>
+                  <th className="p-4 text-slate-300 font-semibold">المواصفات الفنية</th>
+                  <th className="p-4 text-slate-300 font-semibold">ميزات إضافية</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map((product, idx) => (
+                  <tr key={product.id} className={`border-b border-slate-800 hover:bg-slate-800 transition-colors ${idx % 2 === 0 ? 'bg-slate-900/40' : 'bg-transparent'}`}>
+                    <td className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 mt-1 bg-slate-800 rounded-lg flex items-center justify-center text-2xl border border-slate-700 shadow-inner shrink-0">
+                          {product.icon}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-sm max-w-sm leading-relaxed mb-1.5">{product.item_name}</div>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="text-xs text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20" title="رقم الصنف"># {product.item_number}</span>
+                            {product.model !== "N/A" && product.model !== "وصلة" && product.model !== "زاوية" && (
+                              <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-600" title="الموديل">الموديل: {product.model}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {product.watt !== null ? (
+                        <>
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-white font-mono font-bold">{product.watt_text || `${product.watt} وات`}</span>
+                            {product.lumen !== "-" && (
+                              <>
+                                <span className="text-xs text-slate-400">|</span>
+                                <span className="text-slate-300 font-mono text-sm">{product.lumen} لومن</span>
+                              </>
+                            )}
+                            {product.kelvin && (
+                              <>
+                                <span className="text-xs text-slate-400">|</span>
+                                <span className="text-xs text-slate-400 font-mono">{product.kelvin}</span>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-slate-500 text-xs italic">لا ينطبق (ملحق)</div>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1.5">
+                        {product.technical_specs !== "-" ? (
+                          <div className="text-xs text-slate-300 leading-relaxed max-w-md">{product.technical_specs}</div>
+                        ) : (
+                          <span className="text-slate-500 text-xs italic">غير متوفر في البروشورات المرفقة</span>
+                        )}
+                        {product.technical_specs === "-" && product.cri !== "-" && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-12">الزاوية:</span>
+                            <span className="text-sm font-mono text-slate-200">{product.beam_angle}</span>
+                          </div>
+                        )}
+                        {product.technical_specs === "-" && product.cri !== "-" && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-12">CRI:</span>
+                            <span className="text-xs font-bold text-green-400">{product.cri}</span>
+                          </div>
+                        )}
+                        {product.technical_specs === "-" && product.ugr !== "N/A" && product.ugr !== "-" && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-12">UGR:</span>
+                            <span className="text-xs font-bold text-blue-400">{product.ugr}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-slate-400 max-w-xs leading-relaxed">
+                      {product.features !== "-" ? product.features : "غير متوفر في البروشورات المرفقة"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* No Results State */}
+            {filteredProducts.length === 0 && (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <span className="text-5xl mb-4 opacity-50">🔍</span>
+                <h3 className="text-xl font-bold text-white mb-2">لم يتم العثور على منتجات</h3>
+                <p className="text-slate-400">لا يوجد منتج يطابق خيارات البحث الحالية.</p>
+                <button
+                  onClick={() => { setSearchTerm(''); setSelectedWatt('All'); setSelectedKelvin('All'); }}
+                  className="mt-4 bg-slate-800 hover:bg-slate-700 text-yellow-500 px-4 py-2 rounded-lg transition-colors border border-slate-600"
+                >
+                  إعادة ضبط الفلاتر
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // --- 4. Smart Systems Section ---
+    function SmartSystemSection() {
+      return (
+        <div className="space-y-8 animate-fadeIn">
+          <div className="bg-gradient-to-br from-slate-900 to-black p-8 rounded-2xl border border-slate-700 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(90deg, transparent 99%, #fff 100%)', backgroundSize: '20px 100%' }}></div>
+
+            <div className="relative z-10">
+              <h2 className="text-3xl font-bold text-white mb-2">أنظمة المسار المغناطيسي 48V الذكية</h2>
+              <p className="text-yellow-500 font-mono text-sm mb-6 tracking-wider">MULTIPLE INTELLIGENT CONTROL METHODS</p>
+
+              <p className="text-slate-300 max-w-3xl leading-relaxed mb-8">
+                نظام متكامل يجمع بين الجمال المعماري (Concealed/Surface Tracks) والأمان العالي بجهد (DC48V). يتميز بترقية التجربة المغناطيسية لسهولة الفك والتركيب بدون أدوات (Tool-free)، مع دعم كامل للتحكم الذكي والتعتيم.
+              </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-center hover:border-yellow-500 transition-colors">
+                  <div className="text-3xl mb-2">📱</div>
+                  <div className="text-sm font-bold text-white">Tuya / Smart Life</div>
+                  <div className="text-xs text-slate-400 mt-1">تحكم عبر التطبيق</div>
+                </div>
+                <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-center hover:border-yellow-500 transition-colors">
+                  <div className="text-3xl mb-2">🗣️</div>
+                  <div className="text-sm font-bold text-white">Voice Control</div>
+                  <div className="text-xs text-slate-400 mt-1">أوامر صوتية</div>
+                </div>
+                <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-center hover:border-yellow-500 transition-colors">
+                  <div className="text-3xl mb-2">🎛️</div>
+                  <div className="text-sm font-bold text-white">ZigBee Alliance</div>
+                  <div className="text-xs text-slate-400 mt-1">ارتباط مباشر بالأنظمة</div>
+                </div>
+                <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-center hover:border-yellow-500 transition-colors">
+                  <div className="text-3xl mb-2">🛡️</div>
+                  <div className="text-sm font-bold text-white">DC48V Safe</div>
+                  <div className="text-xs text-slate-400 mt-1">جهد آمن للمس</div>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">عائلة وحدات الإضاءة المغناطيسية</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-2 h-full bg-blue-500 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                  <h4 className="font-bold text-white mb-1">CXFG20</h4>
+                  <div className="text-xs text-blue-400 mb-3">Floodlight Series</div>
+                  <p className="text-xs text-slate-400 mb-2">إضاءة عامة بزاوية 120 درجة لإنارة المساحات الواسعة بتجانس تام.</p>
+                  <div className="text-[10px] text-slate-500 font-mono">10W / 20W / 40W</div>
+                </div>
+                <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-2 h-full bg-yellow-500 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                  <h4 className="font-bold text-white mb-1">CXGS20</h4>
+                  <div className="text-xs text-yellow-500 mb-3">Grille Lamp Series</div>
+                  <p className="text-xs text-slate-400 mb-2">عدسات شبكية موجهة بزاوية 24 درجة، مثالية لراحة العين (UGR &lt; 15).</p>
+                  <div className="text-[10px] text-slate-500 font-mono">6W / 12W / 18W</div>
+                </div>
+                <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-2 h-full bg-red-500 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                  <h4 className="font-bold text-white mb-1">CXZD20</h4>
+                  <div className="text-xs text-red-400 mb-3">Folding Lamp Series</div>
+                  <p className="text-xs text-slate-400 mb-2">إضاءة قابلة للطي والتوجيه الحر لتركيز الضوء على مناطق العرض.</p>
+                  <div className="text-[10px] text-slate-500 font-mono">6W / 12W / 18W</div>
+                </div>
+                <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-2 h-full bg-green-500 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                  <h4 className="font-bold text-white mb-1">CXDX20</h4>
+                  <div className="text-xs text-green-400 mb-3">Suspension Lamp</div>
+                  <p className="text-xs text-slate-400 mb-2">وحدات متدلية أنيقة تستخدم فوق الطاولات في المكاتب والمطاعم.</p>
+                  <div className="text-[10px] text-slate-500 font-mono">6W / 10W</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render Application
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
