@@ -1880,11 +1880,17 @@
       const collapseAllGroups = () => {
         setExpandedGroups({});
       };
-      const collapseGroup = (groupKey) => {
+      const collapseGroup = (groupKey, preserveScroll = false) => {
+        const scrollY = window.scrollY;
         setExpandedGroups(current => ({
           ...current,
           [groupKey]: false,
         }));
+        if (preserveScroll) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'auto' }));
+          });
+        }
       };
       const toggleGroup = (groupKey) => {
         setExpandedGroups(current => ({
@@ -1926,11 +1932,176 @@
         await navigator.clipboard.writeText(text);
       };
 
-      const escapeExcelCell = (value) => String(value ?? '')
+      const escapeXml = (value) => String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+
+      const encodeUtf8 = (value) => new TextEncoder().encode(value);
+
+      const concatBytes = (parts) => {
+        const totalLength = parts.reduce((total, part) => total + part.length, 0);
+        const output = new Uint8Array(totalLength);
+        let offset = 0;
+        parts.forEach(part => {
+          output.set(part, offset);
+          offset += part.length;
+        });
+        return output;
+      };
+
+      const uint16 = (value) => {
+        const bytes = new Uint8Array(2);
+        new DataView(bytes.buffer).setUint16(0, value, true);
+        return bytes;
+      };
+
+      const uint32 = (value) => {
+        const bytes = new Uint8Array(4);
+        new DataView(bytes.buffer).setUint32(0, value >>> 0, true);
+        return bytes;
+      };
+
+      const crcTable = (() => {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; i += 1) {
+          let crc = i;
+          for (let j = 0; j < 8; j += 1) {
+            crc = (crc & 1) ? (0xedb88320 ^ (crc >>> 1)) : (crc >>> 1);
+          }
+          table[i] = crc >>> 0;
+        }
+        return table;
+      })();
+
+      const crc32 = (bytes) => {
+        let crc = 0xffffffff;
+        for (let i = 0; i < bytes.length; i += 1) {
+          crc = crcTable[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xffffffff) >>> 0;
+      };
+
+      const createZipArchive = (files) => {
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+
+        files.forEach(file => {
+          const nameBytes = encodeUtf8(file.name);
+          const dataBytes = encodeUtf8(file.content);
+          const crc = crc32(dataBytes);
+          const localHeader = concatBytes([
+            uint32(0x04034b50), uint16(20), uint16(0), uint16(0), uint16(0), uint16(0),
+            uint32(crc), uint32(dataBytes.length), uint32(dataBytes.length),
+            uint16(nameBytes.length), uint16(0), nameBytes,
+          ]);
+          const centralHeader = concatBytes([
+            uint32(0x02014b50), uint16(20), uint16(20), uint16(0), uint16(0), uint16(0), uint16(0),
+            uint32(crc), uint32(dataBytes.length), uint32(dataBytes.length),
+            uint16(nameBytes.length), uint16(0), uint16(0), uint16(0), uint16(0),
+            uint32(0), uint32(offset), nameBytes,
+          ]);
+
+          localParts.push(localHeader, dataBytes);
+          centralParts.push(centralHeader);
+          offset += localHeader.length + dataBytes.length;
+        });
+
+        const centralDirectory = concatBytes(centralParts);
+        const endRecord = concatBytes([
+          uint32(0x06054b50), uint16(0), uint16(0), uint16(files.length), uint16(files.length),
+          uint32(centralDirectory.length), uint32(offset), uint16(0),
+        ]);
+
+        return concatBytes([...localParts, centralDirectory, endRecord]);
+      };
+
+      const getExcelColumnName = (index) => {
+        let name = '';
+        let current = index + 1;
+        while (current > 0) {
+          const remainder = (current - 1) % 26;
+          name = String.fromCharCode(65 + remainder) + name;
+          current = Math.floor((current - 1) / 26);
+        }
+        return name;
+      };
+
+      const createWorksheetXml = (rows) => {
+        const sheetRows = rows.map((row, rowIndex) => {
+          const rowNumber = rowIndex + 1;
+          const cells = row.map((cell, columnIndex) => {
+            const cellRef = `${getExcelColumnName(columnIndex)}${rowNumber}`;
+            return `<c r="${cellRef}" t="inlineStr"><is><t>${escapeXml(cell)}</t></is></c>`;
+          }).join('');
+          return `<row r="${rowNumber}">${cells}</row>`;
+        }).join('');
+
+        return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+            <sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews>
+            <cols>
+              <col min="1" max="1" width="18" customWidth="1"/>
+              <col min="2" max="2" width="55" customWidth="1"/>
+              <col min="3" max="6" width="18" customWidth="1"/>
+            </cols>
+            <sheetData>${sheetRows}</sheetData>
+          </worksheet>`;
+      };
+
+      const createXlsxWorkbook = (rows) => createZipArchive([
+        {
+          name: '[Content_Types].xml',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+              <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+              <Default Extension="xml" ContentType="application/xml"/>
+              <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+              <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+              <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+            </Types>`,
+        },
+        {
+          name: '_rels/.rels',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+              <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+            </Relationships>`,
+        },
+        {
+          name: 'xl/workbook.xml',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+              <workbookViews><workbookView rightToLeft="1"/></workbookViews>
+              <sheets><sheet name="المنتجات" sheetId="1" r:id="rId1"/></sheets>
+            </workbook>`,
+        },
+        {
+          name: 'xl/_rels/workbook.xml.rels',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+              <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+              <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+            </Relationships>`,
+        },
+        {
+          name: 'xl/styles.xml',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+              <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
+              <borders count="1"><border/></borders>
+              <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+              <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+            </styleSheet>`,
+        },
+        {
+          name: 'xl/worksheets/sheet1.xml',
+          content: createWorksheetXml(rows),
+        },
+      ]);
 
       const exportFilteredProductsToExcel = () => {
         const headers = ['كود المنتج', 'اسم المنتج', 'رقم الموديل', 'الوات', 'اللون', 'اللومن'];
@@ -1942,20 +2113,12 @@
           product.kelvin || '',
           getProductLumenLabel(product),
         ]);
-        const tableRows = [headers, ...rows]
-          .map(row => `<tr>${row.map(cell => `<td>${escapeExcelCell(cell)}</td>`).join('')}</tr>`)
-          .join('');
-        const excelHtml = `
-          <html dir="rtl">
-            <head><meta charset="UTF-8"></head>
-            <body><table border="1">${tableRows}</table></body>
-          </html>
-        `;
-        const blob = new Blob(['\ufeff', excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const workbookBytes = createXlsxWorkbook([headers, ...rows]);
+        const blob = new Blob([workbookBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'MBM-Lighting-products.xls';
+        link.download = 'MBM-Lighting-products.xlsx';
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -1991,27 +2154,36 @@
               <h2 className="text-2xl sm:text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">المنتجات (المواصفات الفنية)</h2>
               <div className="mt-2 text-sm text-slate-400">({groupedProducts.length}) فئة / ({filteredProducts.length}) منتج</div>
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:justify-end">
+            <div className="grid grid-cols-3 gap-2 lg:flex lg:justify-end">
               <button
                 type="button"
                 onClick={expandAllGroups}
-                className="min-h-10 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
+                className="min-h-10 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 sm:px-4 py-2 text-sm font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
+                aria-label="توسيع كل الفئات"
+                title="توسيع كل الفئات"
               >
-                توسيع كل الفئات
+                <span className="text-lg sm:hidden">＋</span>
+                <span className="hidden sm:inline">توسيع كل الفئات</span>
               </button>
               <button
                 type="button"
                 onClick={collapseAllGroups}
-                className="min-h-10 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-700 transition-colors"
+                className="min-h-10 rounded-lg border border-slate-600 bg-slate-800 px-2 sm:px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-700 transition-colors"
+                aria-label="طي كل الفئات"
+                title="طي كل الفئات"
               >
-                طي كل الفئات
+                <span className="text-lg sm:hidden">−</span>
+                <span className="hidden sm:inline">طي كل الفئات</span>
               </button>
               <button
                 type="button"
                 onClick={exportFilteredProductsToExcel}
-                className="min-h-10 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 transition-colors"
+                className="min-h-10 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 sm:px-4 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 transition-colors"
+                aria-label="تصدير إلى الإكسل"
+                title="تصدير إلى الإكسل"
               >
-                تصدير إلى الإكسل
+                <span className="text-lg sm:hidden">⇩</span>
+                <span className="hidden sm:inline">تصدير إلى الإكسل</span>
               </button>
             </div>
           </div>
@@ -2135,7 +2307,7 @@
                             <button
                               type="button"
                               data-role="collapse-current-group"
-                              onClick={() => collapseGroup(group.key)}
+                              onClick={() => collapseGroup(group.key, true)}
                               className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-5 py-2 text-xs font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
                             >
                               طي هذه الفئة
@@ -2201,7 +2373,7 @@
                     <button
                       type="button"
                       data-role="collapse-current-group"
-                      onClick={() => collapseGroup(group.key)}
+                      onClick={() => collapseGroup(group.key, true)}
                       className="w-full min-h-11 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
                     >
                       طي هذه الفئة
