@@ -18,9 +18,14 @@ def main():
         "footer company logo exists": FOOTER_LOGO.exists(),
         "footer company logo is used": 'src="./شعار شركة المطري الرائدة للتجارة المحدودة.png"' in html,
         "footer logo has no white box": "bg-white/95" not in html,
+        "footer text company name is removed": "<div className=\"text-sm font-bold text-white\">شركة المطري الرائدة للتجارة المحدودة</div>" not in html,
+        "footer logo is centered and larger": 'data-role="footer-brand"' in html and "justify-center" in html and "h-16" in html,
+        "footer website is below logo": 'data-role="footer-website"' in html and "block text-center" in html,
+        "footer contact badge exists": "تواصل معنا" in html and "rounded-full" in html,
         "footer content is constrained": 'data-role="site-footer"' in html and 'data-role="footer-shell"' in html and "max-w-7xl mx-auto" in html,
         "compact footer exists": 'data-role="site-footer"' in html and "p-4" in html,
         "footer phone numbers align right": 'data-role="footer-phone"' in html and "text-right" in html,
+        "mobile footer cards split into two columns": 'data-role="footer-contact-card"' in html and "grid-cols-[auto_1fr]" in html,
         "mobile footer stacks cleanly": "grid-cols-1" in html and "sm:grid-cols-2" in html,
         "company website appears": "www.almatari-mbm.com" in html,
         "customer service phone appears": "777525103" in html,
@@ -37,6 +42,7 @@ def main():
         "collapse all button exists": "collapseAllGroups" in html and "طي كل الفئات" in html,
         "terminology tab is default": "useState('terminology')" in html,
         "header slogan exists": "لكل مساحة نورها" in html,
+        "header slogan uses elegant Arabic font": "fonts.googleapis.com" in html and "font-['Cairo']" in html,
         "header gold divider exists": 'data-role="header-gold-divider"' in html,
         "old header technical label is removed": "48V Smart Systems Available" not in html,
         "child products render under the model": "group.products.map" in html,
@@ -46,7 +52,7 @@ def main():
         "child product rows are indented": 'data-role="child-product-row"' in html and "border-r-2" in html,
         "mobile product cards exist": 'data-role="mobile-product-groups"' in html,
         "desktop product table is hidden on mobile": 'data-role="desktop-product-table"' in html and "hidden lg:block" in html,
-        "scroll to top button exists": 'data-role="scroll-to-top"' in html and "scrollTo" in html,
+        "global scroll to top button exists": "ScrollToTopButton" in html and 'data-role="scroll-to-top"' in html and "scrollTo" in html,
     }
 
     failed = [name for name, ok in checks.items() if not ok]
@@ -60,6 +66,11 @@ def main():
 
     if "الموديلات: {group.modelLabel}" in html:
         print("Model label is still rendered next to the parent product.")
+        return 1
+
+    products_section = html[html.find("function ProductsSpecSection()"):html.find("// --- 4. Smart Systems Section ---")]
+    if 'data-role="scroll-to-top"' in products_section:
+        print("Scroll-to-top button is still scoped to the products tab.")
         return 1
 
     indicator_pos = html.find('data-role="group-toggle-indicator"')

@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MBM Lighting Digital Catalog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
 
   <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -1467,52 +1470,84 @@
       <div data-role="footer-phone" className="text-right font-mono text-slate-200" dir="ltr">{children}</div>
     );
 
+    const FooterContactCard = ({ title, children }) => (
+      <div data-role="footer-contact-card" className="grid grid-cols-[auto_1fr] items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs leading-relaxed">
+        <div className="min-w-[5.25rem] font-bold text-yellow-500">{title}</div>
+        <div className="min-w-0 text-right">{children}</div>
+      </div>
+    );
+
+    const ScrollToTopButton = () => {
+      const [showScrollTop, setShowScrollTop] = useState(false);
+
+      useEffect(() => {
+        const handleScroll = () => setShowScrollTop(window.scrollY > 480);
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
+
+      const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      return (
+        <button
+          type="button"
+          data-role="scroll-to-top"
+          onClick={scrollToTop}
+          className={`fixed bottom-5 left-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-yellow-500/50 bg-slate-950/95 text-2xl font-bold text-yellow-400 shadow-xl shadow-black/30 backdrop-blur transition-all duration-200 hover:bg-yellow-500 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${showScrollTop ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
+          aria-label="الرجوع إلى أعلى الصفحة"
+          title="الرجوع إلى أعلى الصفحة"
+        >
+          ↑
+        </button>
+      );
+    };
+
     const CompanyFooter = () => (
       <footer data-role="site-footer" className="px-3 pb-5 sm:px-4 md:px-6 text-slate-300">
         <div data-role="footer-shell" className="max-w-7xl mx-auto rounded-2xl border border-slate-800 bg-slate-950/95 p-4 shadow-xl shadow-black/20">
+          <div className="mb-3 flex justify-center sm:justify-start">
+            <span className="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-3 py-1 text-xs font-bold text-yellow-500">تواصل معنا</span>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,auto)_1fr] lg:items-center">
-          <div className="flex items-center gap-3">
-            <img
-              src="./شعار شركة المطري الرائدة للتجارة المحدودة.png"
-              alt="شركة المطري الرائدة للتجارة المحدودة"
-              className="h-12 w-auto max-w-[150px] object-contain"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-white">شركة المطري الرائدة للتجارة المحدودة</div>
-              <a href="https://www.almatari-mbm.com" target="_blank" rel="noreferrer" className="text-xs font-mono text-yellow-500 hover:text-yellow-400">
+            <div data-role="footer-brand" className="flex flex-col items-center justify-center text-center">
+              <img
+                src="./شعار شركة المطري الرائدة للتجارة المحدودة.png"
+                alt="شركة المطري الرائدة للتجارة المحدودة"
+                className="h-16 sm:h-20 w-auto max-w-[240px] object-contain"
+              />
+              <a data-role="footer-website" href="https://www.almatari-mbm.com" target="_blank" rel="noreferrer" className="mt-2 block text-center font-mono text-sm font-bold text-yellow-500 hover:text-yellow-400">
                 www.almatari-mbm.com
               </a>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-2 text-xs leading-relaxed sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-              <div className="font-bold text-yellow-500">خدمة العملاء</div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <FooterContactCard title="خدمة العملاء">
               <FooterPhone>+967 777525103</FooterPhone>
               <FooterPhone>+967 772813040</FooterPhone>
               <a href="mailto:info@almatari-mbm.com" className="block text-right font-mono text-slate-400 hover:text-yellow-400">info@almatari-mbm.com</a>
-            </div>
+              </FooterContactCard>
 
-            <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-              <div className="font-bold text-yellow-500">المركز الرئيسي</div>
+              <FooterContactCard title="المركز الرئيسي">
               <div className="mt-1 text-slate-400">عدن - السيلة - الشيخ عثمان</div>
               <FooterPhone>+967 2 399306</FooterPhone>
               <FooterPhone>+967 2 390704</FooterPhone>
-            </div>
+              </FooterContactCard>
 
-            <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-              <div className="font-bold text-yellow-500">فرع كريتر</div>
+              <FooterContactCard title="فرع كريتر">
               <div className="mt-1 text-slate-400">عدن - سوق البهرة - كريتر</div>
               <FooterPhone>+967 2 256952</FooterPhone>
               <FooterPhone>+967 774767556</FooterPhone>
-            </div>
+              </FooterContactCard>
 
-            <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-              <div className="font-bold text-yellow-500">فرع حضرموت</div>
+              <FooterContactCard title="فرع حضرموت">
               <div className="mt-1 text-slate-400">حضرموت - غرب الضيافة - فوة</div>
               <FooterPhone>+967 775510044</FooterPhone>
+              </FooterContactCard>
             </div>
-          </div>
           </div>
         </div>
       </footer>
@@ -1529,7 +1564,7 @@
               <MBMLogo />
               <div data-role="header-gold-divider" className="h-12 w-px bg-gradient-to-b from-transparent via-yellow-500 to-transparent shadow-[0_0_16px_rgba(234,179,8,0.35)]" aria-hidden="true"></div>
               <div className="min-w-0">
-                <p className="text-base sm:text-xl font-bold text-white tracking-normal leading-tight">لكل مساحة نورها</p>
+                <p className="font-['Cairo'] text-lg sm:text-2xl font-extrabold text-white tracking-normal leading-tight">لكل مساحة نورها</p>
                 <p className="mt-1 text-[11px] sm:text-xs text-yellow-500/80 font-semibold tracking-[0.18em] uppercase">MBM Lighting</p>
               </div>
             </div>
@@ -1567,6 +1602,7 @@
             {activeTab === 'smart_system' && <SmartSystemSection />}
           </main>
           <CompanyFooter />
+          <ScrollToTopButton />
         </div>
       );
     }
@@ -1754,14 +1790,6 @@
       const [selectedWatt, setSelectedWatt] = useState('All');
       const [selectedKelvin, setSelectedKelvin] = useState('All');
       const [expandedGroups, setExpandedGroups] = useState({});
-      const [showScrollTop, setShowScrollTop] = useState(false);
-
-      useEffect(() => {
-        const handleScroll = () => setShowScrollTop(window.scrollY > 480);
-        handleScroll();
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-      }, []);
 
       const wattOptions = [...new Set(mbmProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
       const kelvinOptions = [...new Set(mbmProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
@@ -1859,9 +1887,6 @@
         }));
       };
       const isGroupExpanded = (groupKey) => expandedGroups[groupKey] === true;
-      const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
 
       const renderProductPower = (product) => (
         product.watt !== null ? (
@@ -2077,17 +2102,6 @@
               </button>
             </div>
           )}
-
-          <button
-            type="button"
-            data-role="scroll-to-top"
-            onClick={scrollToTop}
-            className={`fixed bottom-5 left-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-yellow-500/50 bg-slate-950/95 text-2xl font-bold text-yellow-400 shadow-xl shadow-black/30 backdrop-blur transition-all duration-200 hover:bg-yellow-500 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${showScrollTop ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
-            aria-label="الرجوع إلى أعلى الصفحة"
-            title="الرجوع إلى أعلى الصفحة"
-          >
-            ↑
-          </button>
         </div>
       );
     }
