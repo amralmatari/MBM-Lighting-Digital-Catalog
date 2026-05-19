@@ -1457,6 +1457,330 @@
         }
       ];
 
+    // --- Product Catalog Enrichment Layer ---
+    // Phase 1: prepares product display metadata for future catalog cards and detail modal.
+    // It does not change the existing ProductsSpecSection UI.
+    const catalogImagePlaceholders = {
+      product: './images/products/placeholder-product.webp',
+      application: './images/applications/placeholder-application.webp',
+    };
+
+    const categoryTitlesByCode = {
+      '07-001-14': 'قواعد اضاءة كوب',
+      '07-001-01': 'قواعد اضاءة بنل',
+      '07-001-16': 'قواعد اضاءة تراك لايت',
+      '07-001-15': 'قواعد اضاءة مانع توهج',
+      '07-001-06': 'قواعد اضاءة سبوت لايت',
+      '07-001-17': 'قواعد اضاءة ماجناتك',
+      '07-001-18': 'ملحقات وتراكات ماجنتك',
+    };
+
+    const categoryImagesByTitle = {
+      'قواعد اضاءة كوب': './images/قواعد اضاءة كوب.jpeg',
+      'قواعد اضاءة بنل': './images/قواعد اضاءة بنل.jpeg',
+      'قواعد اضاءة تراك لايت': './images/قواعد اضاءة تراك لايت.jpg',
+      'قواعد اضاءة مانع توهج': './images/قواعد اضاءة مانع توهج.png',
+      'قواعد اضاءة سبوت لايت': './images/قواعد اضاءة سبوت لايت.png',
+      'قواعد اضاءة ماجناتك': './images/قواعد اضاءة ماجناتك .png',
+      'ملحقات وتراكات ماجنتك': './images/ملحقات وتراكات ماجنتك.jpeg',
+    };
+
+    const categoryNamePrefixes = [
+      'قواعد اضاءة كوب',
+      'قواعد اضاءة بنل',
+      'قواعد اضاءة تراك لايت',
+      'قواعد اضاءة مانع توهج',
+      'قواعد اضاءة سبوت لايت',
+      'قواعد اضاءة ماجناتك متحرك',
+      'قواعد اضاءة ماجناتك',
+    ];
+
+    const productTypeRules = [
+      { type: 'driver', patterns: ['درايفر', 'محول طاقة'] },
+      { type: 'connector', patterns: ['وصلة', 'توصيلة'] },
+      { type: 'mounting_accessory', patterns: ['مشبك', 'صفيحة'] },
+      { type: 'cable', patterns: ['سلك'] },
+      { type: 'track_light', patterns: ['تراك لايت'] },
+      { type: 'spotlight', patterns: ['سبوت لايت'] },
+      { type: 'anti_glare', patterns: ['مانع توهج'] },
+      { type: 'panel_light', patterns: ['بنل'] },
+      { type: 'cup_light', patterns: ['كوب'] },
+      { type: 'magnetic_track', patterns: ['تراك'] },
+      { type: 'magnetic_light', patterns: ['ماجناتك', 'مغناطيسي'] },
+    ];
+
+    const productCategoryMeta = {
+      cup_light: {
+        label: 'كوب لايت',
+        catalogCategory: 'قواعد اضاءة كوب',
+        recommendedUse: ['مجالس', 'صالات', 'ممرات', 'معارض'],
+      },
+      panel_light: {
+        label: 'بنل لايت',
+        catalogCategory: 'قواعد اضاءة بنل',
+        recommendedUse: ['مكاتب', 'مطابخ', 'محلات', 'ممرات'],
+      },
+      track_light: {
+        label: 'تراك لايت',
+        catalogCategory: 'قواعد اضاءة تراك لايت',
+        recommendedUse: ['معارض', 'محلات', 'مطاعم', 'كافيهات'],
+      },
+      anti_glare: {
+        label: 'مانع توهج',
+        catalogCategory: 'قواعد اضاءة مانع توهج',
+        recommendedUse: ['مجالس', 'فنادق', 'غرف نوم', 'مساحات راقية'],
+      },
+      spotlight: {
+        label: 'سبوت لايت',
+        catalogCategory: 'قواعد اضاءة سبوت لايت',
+        recommendedUse: ['إضاءة مركزة', 'لوحات', 'ديكور', 'معارض'],
+      },
+      magnetic_light: {
+        label: 'ماجنتك',
+        catalogCategory: 'قواعد اضاءة ماجناتك',
+        recommendedUse: ['تصميم داخلي', 'محلات', 'معارض', 'مجالس حديثة'],
+      },
+      magnetic_track: {
+        label: 'تراك ماجنتك',
+        catalogCategory: 'ملحقات وتراكات ماجنتك',
+        recommendedUse: ['تركيب نظام التراك', 'ملحقات النظام'],
+      },
+      driver: {
+        label: 'درايفر',
+        catalogCategory: 'درايفرات 48V',
+        recommendedUse: ['نظام ماجنتك 48V'],
+      },
+      connector: {
+        label: 'وصلة تراك',
+        catalogCategory: 'وصلات التراك',
+        recommendedUse: ['تركيب نظام التراك', 'ملحقات النظام'],
+      },
+      mounting_accessory: {
+        label: 'ملحق تثبيت',
+        catalogCategory: 'ملحقات تثبيت التراك',
+        recommendedUse: ['تركيب نظام التراك', 'ملحقات النظام'],
+      },
+      cable: {
+        label: 'سلك توصيل',
+        catalogCategory: 'أسلاك التوصيل',
+        recommendedUse: ['تركيب نظام التراك', 'ملحقات النظام'],
+      },
+      accessory: {
+        label: 'ملحق',
+        catalogCategory: 'ملحقات النظام',
+        recommendedUse: ['تركيب نظام التراك', 'ملحقات النظام'],
+      },
+      unknown: {
+        label: 'منتج',
+        catalogCategory: 'غير مصنف',
+        recommendedUse: [],
+      },
+    };
+
+    const normalizeProductName = (name) => String(name || '')
+      .replace(/\s*لون\s*\d+\s*$/g, '')
+      .replace(/\s*لون\d+\s*$/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    const getItemCategoryCode = (itemNumber) => {
+      const parts = (itemNumber || '').split('-').filter(Boolean);
+      return parts.length >= 4 ? parts.slice(0, 3).join('-') : itemNumber || 'غير مصنف';
+    };
+
+    const getCategoryTitle = (product, categoryCode = getItemCategoryCode(product?.item_number)) => {
+      const normalizedName = normalizeProductName(product?.item_name);
+      const namePrefix = categoryNamePrefixes.find(prefix => normalizedName.startsWith(prefix));
+      if (namePrefix) return namePrefix.replace(' متحرك', '');
+      if (categoryTitlesByCode[categoryCode]) return categoryTitlesByCode[categoryCode];
+      if (normalizedName.includes('درايفر') || normalizedName.includes('محول طاقة')) return 'درايفرات 48V';
+      if (normalizedName.includes('تراك')) return 'تراكات وملحقات التراك';
+      if (normalizedName.includes('وصلة') || normalizedName.includes('توصيلة')) return 'وصلات التراك';
+      if (normalizedName.includes('مشبك') || normalizedName.includes('صفيحة')) return 'ملحقات تثبيت التراك';
+      if (normalizedName.includes('سلك')) return 'أسلاك التوصيل';
+      return normalizedName.replace(/\s+\d+\s*وات.*$/g, '').replace(/\s+موديل\s+.*$/g, '').trim() || categoryCode;
+    };
+
+    const getCategoryImage = (title) => categoryImagesByTitle[title] || './images/ملحقات وتراكات ماجنتك.jpeg';
+
+    const parseNumericValue = (value) => {
+      const matches = String(value ?? '').match(/\d+(?:\.\d+)?/g);
+      if (!matches) return 0;
+      const numbers = matches.map(Number).filter(number => Number.isFinite(number));
+      return numbers.length > 0 ? Math.max(...numbers) : 0;
+    };
+
+    const parseLumen = (product) => parseNumericValue(product?.lumen);
+
+    const parseWatt = (product) => {
+      if (Number.isFinite(product?.watt)) return Number(product.watt);
+      const wattText = `${product?.watt_text || ''} ${product?.item_name || ''}`;
+      const match = wattText.match(/(\d+(?:\.\d+)?)\s*وات/);
+      return match ? Number(match[1]) : 0;
+    };
+
+    const extractProductLumen = (lumenValue) => parseNumericValue(lumenValue);
+
+    const slugifyProductIdentifier = (product) => String(product?.item_number || product?.id || 'product')
+      .trim()
+      .replace(/[^A-Za-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    const hasValidLumen = (product) => parseLumen(product) > 0;
+
+    const getProductType = (product) => {
+      const name = normalizeProductName(product?.item_name);
+      const matchingRule = productTypeRules.find(rule => rule.patterns.some(pattern => name.includes(pattern)));
+      if (matchingRule?.type === 'magnetic_track' && name.includes('تراك لايت')) return 'track_light';
+      if (matchingRule) return matchingRule.type;
+      const categoryCode = getItemCategoryCode(product?.item_number);
+      if (categoryCode === '07-001-14') return 'cup_light';
+      if (categoryCode === '07-001-01') return 'panel_light';
+      if (categoryCode === '07-001-16') return 'track_light';
+      if (categoryCode === '07-001-15') return 'anti_glare';
+      if (categoryCode === '07-001-06') return 'spotlight';
+      if (categoryCode === '07-001-17') return 'magnetic_light';
+      if (categoryCode === '07-001-18') return 'accessory';
+      return 'unknown';
+    };
+
+    const getNormalizedWattLabel = (product) => {
+      const wattValue = parseWatt(product);
+      return wattValue > 0 ? `${wattValue} وات` : '';
+    };
+
+    const getCatalogDisplayName = (product) => {
+      const productType = getProductType(product);
+      const meta = productCategoryMeta[productType] || productCategoryMeta.unknown;
+      const wattLabel = getNormalizedWattLabel(product);
+      const kelvinLabel = product?.kelvin || '';
+      const modelLabel = product?.model && product.model !== 'N/A' ? product.model : '';
+
+      if (productType === 'driver') {
+        return ['درايفر ماجنتك داخلي', wattLabel].filter(Boolean).join(' - ');
+      }
+
+      if (['magnetic_track', 'connector', 'mounting_accessory', 'cable', 'accessory', 'unknown'].includes(productType)) {
+        return normalizeProductName(product?.item_name);
+      }
+
+      return [
+        [meta.label, modelLabel].filter(Boolean).join(' '),
+        wattLabel,
+        kelvinLabel,
+      ].filter(Boolean).join(' - ');
+    };
+
+    const getCatalogShortName = (product) => {
+      const productType = getProductType(product);
+      const meta = productCategoryMeta[productType] || productCategoryMeta.unknown;
+      const wattLabel = getNormalizedWattLabel(product);
+
+      if (productType === 'driver') return ['درايفر', wattLabel].filter(Boolean).join(' ');
+      if (['magnetic_track', 'connector', 'mounting_accessory', 'cable', 'accessory', 'unknown'].includes(productType)) {
+        return normalizeProductName(product?.item_name).replace(/\s{2,}/g, ' ').slice(0, 34);
+      }
+      return [meta.label, wattLabel].filter(Boolean).join(' ');
+    };
+
+    const getExpectedProductImagePath = (product) => `./images/products/${slugifyProductIdentifier(product)}-product.webp`;
+
+    const getExpectedApplicationImagePath = (product) => `./images/applications/${slugifyProductIdentifier(product)}-application.webp`;
+
+    const getProductImagePath = () => catalogImagePlaceholders.product;
+
+    const getApplicationImagePath = () => catalogImagePlaceholders.application;
+
+    const getRecommendedUses = (product) => {
+      const productType = getProductType(product);
+      return [...(productCategoryMeta[productType]?.recommendedUse || [])];
+    };
+
+    const getProductBadges = (product) => {
+      const productType = getProductType(product);
+      const badges = [];
+      const criText = String(product?.cri || '');
+      const ugrText = String(product?.ugr || '');
+      const validLumen = hasValidLumen(product);
+      const calculatorReadiness = getCalculatorReadiness(product);
+
+      if (criText.includes('90')) badges.push('CRI عالي');
+      if (ugrText.includes('<19') || ugrText.includes('<16')) badges.push('مانع توهج');
+      if (validLumen) badges.push('لومن متوفر');
+      if (calculatorReadiness.is_calculator_ready) badges.push('مناسب للحاسبة');
+      if (productType === 'driver') badges.push('درايفر');
+      if (['connector', 'mounting_accessory', 'cable', 'accessory', 'magnetic_track'].includes(productType)) badges.push('ملحق');
+      if (productType === 'track_light') badges.push('تراك لايت');
+      if (productType === 'magnetic_light') badges.push('ماجنتك 48V');
+
+      return [...new Set(badges)];
+    };
+
+    const getCalculatorReadiness = (product) => {
+      const productType = getProductType(product);
+      const nonLightingTypes = ['driver', 'magnetic_track', 'connector', 'mounting_accessory', 'cable', 'accessory', 'unknown'];
+      const lumenValue = parseLumen(product);
+      const wattValue = parseWatt(product);
+      const isLightingUnit = !nonLightingTypes.includes(productType);
+      const validLumen = lumenValue > 0;
+
+      return {
+        is_lighting_unit: isLightingUnit,
+        has_valid_lumen: validLumen,
+        is_calculator_ready: isLightingUnit && validLumen && wattValue > 0,
+        lumen_value: lumenValue,
+        watt_value: wattValue,
+      };
+    };
+
+    const enrichProductForCatalog = (product) => {
+      const productType = getProductType(product);
+      const calculatorReadiness = getCalculatorReadiness(product);
+      const isDriver = productType === 'driver';
+      const isTrack = productType === 'magnetic_track' || productType === 'track_light';
+      const isAccessory = ['magnetic_track', 'connector', 'mounting_accessory', 'cable', 'accessory', 'unknown'].includes(productType);
+      const notes = ['الصورة قيد التحديث.'];
+
+      if (!calculatorReadiness.has_valid_lumen) {
+        notes.push('بيانات اللومن غير متوفرة، لذلك لا يمكن استخدام المنتج في الحاسبة.');
+      }
+      if (isDriver) {
+        notes.push('هذا المنتج درايفر وليس وحدة إضاءة مباشرة.');
+      } else if (!calculatorReadiness.is_lighting_unit) {
+        notes.push(isTrack ? 'هذا المنتج ملحق/تراك وليس وحدة إضاءة مباشرة.' : 'هذا المنتج ملحق وليس وحدة إضاءة مباشرة.');
+      }
+      if (calculatorReadiness.is_calculator_ready) {
+        notes.push('يمكن استخدام هذا المنتج لاحقًا في حاسبة عدد وحدات الإضاءة.');
+      }
+
+      return {
+        ...product,
+        display_name: getCatalogDisplayName(product),
+        short_name: getCatalogShortName(product),
+        catalog_category: productCategoryMeta[productType]?.catalogCategory || getCategoryTitle(product),
+        product_type: productType,
+        product_image_path_expected: getExpectedProductImagePath(product),
+        application_image_path_expected: getExpectedApplicationImagePath(product),
+        product_image: getProductImagePath(product),
+        application_image: getApplicationImagePath(product),
+        image_status: 'placeholder',
+        recommended_use: getRecommendedUses(product),
+        badges: getProductBadges(product),
+        is_lighting_unit: calculatorReadiness.is_lighting_unit,
+        is_accessory: isAccessory,
+        is_driver: isDriver,
+        is_track: isTrack,
+        has_valid_lumen: calculatorReadiness.has_valid_lumen,
+        is_calculator_ready: calculatorReadiness.is_calculator_ready,
+        lumen_value: calculatorReadiness.lumen_value,
+        watt_value: calculatorReadiness.watt_value,
+        catalog_notes: notes,
+      };
+    };
+
+    const catalogProducts = mbmProducts.map(enrichProductForCatalog);
+
     // --- Custom MBM Logo Component ---
     const MBMLogo = () => (
       <img
@@ -1804,12 +2128,6 @@
         { name: 'مطعم أو كافيه', lux: 200, description: 'إضاءة مريحة للأجواء والجلوس' },
       ];
 
-      const extractProductLumen = (lumenValue) => {
-        const matches = String(lumenValue || '').match(/\d+(?:\.\d+)?/g);
-        if (!matches) return 0;
-        return Math.max(...matches.map(Number).filter(value => Number.isFinite(value)));
-      };
-
       const extractFirstNumber = (value) => {
         const match = String(value || '').match(/\d+(?:\.\d+)?/);
         return match ? Number(match[0]) : 0;
@@ -2152,71 +2470,201 @@
       );
     }
 
+    function ProductImage({ product, className = '' }) {
+      const [imageFailed, setImageFailed] = useState(false);
+      const shouldUseVisualPlaceholder = imageFailed || product.image_status === 'placeholder' || !product.product_image;
+      const altText = product.display_name || product.item_name || 'صورة منتج MBM LIGHTING';
+
+      if (shouldUseVisualPlaceholder) {
+        return (
+          <div
+            data-role="product-image-placeholder"
+            className={`flex aspect-[4/3] w-full flex-col items-center justify-center rounded-lg border border-slate-700 bg-slate-950/80 text-center shadow-inner shadow-black/30 ${className}`}
+          >
+            <div className="text-4xl opacity-80">{product.icon || '□'}</div>
+            <div className="mt-2 text-xs font-bold text-slate-400">الصورة قيد التحديث</div>
+          </div>
+        );
+      }
+
+      return (
+        <img
+          src={product.product_image}
+          alt={altText}
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+          className={`aspect-[4/3] w-full rounded-lg border border-slate-700 bg-slate-950 object-contain p-3 ${className}`}
+        />
+      );
+    }
+
+    function ProductSpecsChips({ product }) {
+      const chips = [];
+      const wattValue = product.watt_value || product.watt;
+
+      if (wattValue) {
+        chips.push({ key: 'watt', label: `${wattValue}W`, tone: 'default' });
+      } else if (product.watt_text) {
+        chips.push({ key: 'watt-text', label: product.watt_text, tone: 'default' });
+      }
+
+      if (product.has_valid_lumen) {
+        chips.push({ key: 'lumen', label: `${product.lumen_value} lm`, tone: 'default' });
+      } else {
+        chips.push({ key: 'missing-lumen', label: 'لومن غير متوفر', tone: 'warning' });
+      }
+
+      if (product.kelvin) {
+        chips.push({ key: 'kelvin', label: product.kelvin, tone: 'default' });
+      }
+
+      if (product.cri && product.cri !== '-') {
+        chips.push({ key: 'cri', label: `CRI ${product.cri}`, tone: 'default' });
+      }
+
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {chips.map(chip => (
+            <span
+              key={chip.key}
+              className={`rounded-md border px-2 py-1 text-[11px] font-bold leading-none ${chip.tone === 'warning'
+                ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                : 'border-slate-700 bg-slate-950 text-slate-300'
+                }`}
+              dir="ltr"
+            >
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    function ProductBadges({ product }) {
+      const visibleBadges = (product.badges || []).slice(0, 4);
+      if (visibleBadges.length === 0) return null;
+
+      const getBadgeClass = (badge) => {
+        if (badge === 'مناسب للحاسبة') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+        if (badge === 'ملحق' || badge === 'درايفر') return 'border-slate-600 bg-slate-800 text-slate-300';
+        if (badge === 'مانع توهج' || badge === 'CRI عالي') return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300';
+        return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200';
+      };
+
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {visibleBadges.map(badge => (
+            <span key={badge} className={`rounded-full border px-2 py-1 text-[11px] font-bold ${getBadgeClass(badge)}`}>
+              {badge}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    function ProductUses({ product }) {
+      const uses = product.recommended_use || [];
+      if (uses.length === 0) return null;
+
+      const visibleUses = uses.slice(0, 3);
+      return (
+        <div className="text-xs leading-relaxed text-slate-400">
+          <span className="font-bold text-slate-300">مناسب لـ: </span>
+          {visibleUses.join('، ')}
+          {uses.length > 3 && <span className="text-yellow-400"> + المزيد</span>}
+        </div>
+      );
+    }
+
+    function ProductCard({ product }) {
+      const categoryLabel = productCategoryMeta[product.product_type]?.label || product.catalog_category || 'منتج';
+      const productTitle = product.display_name || product.short_name || product.item_name;
+      const statusLabel = product.is_calculator_ready
+        ? 'مناسب للحاسبة'
+        : product.is_driver
+          ? 'درايفر'
+          : product.is_accessory || product.is_track
+            ? 'ملحق نظام'
+            : product.is_lighting_unit
+              ? 'اللومن غير متوفر'
+              : 'غير مخصص للحاسبة';
+      const statusClass = product.is_calculator_ready
+        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+        : product.is_lighting_unit
+          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+          : 'border-slate-600 bg-slate-800 text-slate-300';
+
+      return (
+        <article data-role="catalog-product-card" className="flex h-full flex-col rounded-xl border border-slate-700 bg-slate-900/80 p-3 shadow-lg shadow-black/10 transition-colors hover:border-yellow-500/50">
+          <ProductImage product={product} />
+
+          <div className="mt-3 flex flex-1 flex-col gap-3">
+            <div className="flex items-start justify-between gap-2">
+              <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-1 text-[11px] font-bold text-yellow-300">
+                {categoryLabel}
+              </span>
+              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusClass}`}>
+                {statusLabel}
+              </span>
+            </div>
+
+            <h3
+              className="min-h-[3rem] text-sm font-extrabold leading-6 text-white"
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              title={productTitle}
+            >
+              {productTitle}
+            </h3>
+
+            <div className="grid grid-cols-1 gap-1.5 rounded-lg border border-slate-800 bg-slate-950/70 p-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-slate-500">الموديل</span>
+                <span className="font-mono font-bold text-slate-200" dir="ltr">{product.model && product.model !== 'N/A' ? product.model : '-'}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-slate-500">رقم الصنف</span>
+                <span className="font-mono font-bold text-yellow-500" dir="ltr">{product.item_number}</span>
+              </div>
+            </div>
+
+            <ProductSpecsChips product={product} />
+            <ProductBadges product={product} />
+            <ProductUses product={product} />
+          </div>
+        </article>
+      );
+    }
+
+    function ProductCatalogCards({ products }) {
+      if (products.length === 0) {
+        return (
+          <div className="rounded-xl border border-slate-700 bg-slate-950 p-8 text-center">
+            <div className="text-4xl opacity-50">⌕</div>
+            <h3 className="mt-3 text-lg font-bold text-white">لا توجد منتجات مطابقة لخيارات البحث الحالية.</h3>
+            <p className="mt-2 text-sm text-slate-400">جرّب تعديل كلمة البحث أو الفلاتر.</p>
+          </div>
+        );
+      }
+
+      return (
+        <div data-role="catalog-cards-view" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {products.map(product => (
+            <ProductCard key={product.item_number} product={product} />
+          ))}
+        </div>
+      );
+    }
+
     // --- 4. Products Spec Section (Grouped Search & Filters) ---
     function ProductsSpecSection() {
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedWatt, setSelectedWatt] = useState('All');
       const [selectedKelvin, setSelectedKelvin] = useState('All');
+      const [viewMode, setViewMode] = useState('cards');
       const [expandedGroups, setExpandedGroups] = useState({});
 
-      const wattOptions = [...new Set(mbmProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
-      const kelvinOptions = [...new Set(mbmProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
-
-      const normalizeProductName = (name) => name
-        .replace(/\s*لون\s*\d+\s*$/g, '')
-        .replace(/\s*لون\d+\s*$/g, '')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-
-      const getItemCategoryCode = (itemNumber) => {
-        const parts = (itemNumber || '').split('-').filter(Boolean);
-        return parts.length >= 4 ? parts.slice(0, 3).join('-') : itemNumber || 'غير مصنف';
-      };
-
-      const categoryTitlesByCode = {
-        '07-001-14': 'قواعد اضاءة كوب',
-        '07-001-01': 'قواعد اضاءة بنل',
-        '07-001-16': 'قواعد اضاءة تراك لايت',
-        '07-001-15': 'قواعد اضاءة مانع توهج',
-        '07-001-06': 'قواعد اضاءة سبوت لايت',
-        '07-001-17': 'قواعد اضاءة ماجناتك',
-        '07-001-18': 'ملحقات وتراكات ماجنتك',
-      };
-
-      const categoryImagesByTitle = {
-        'قواعد اضاءة كوب': './images/قواعد اضاءة كوب.jpeg',
-        'قواعد اضاءة بنل': './images/قواعد اضاءة بنل.jpeg',
-        'قواعد اضاءة تراك لايت': './images/قواعد اضاءة تراك لايت.jpg',
-        'قواعد اضاءة مانع توهج': './images/قواعد اضاءة مانع توهج.png',
-        'قواعد اضاءة سبوت لايت': './images/قواعد اضاءة سبوت لايت.png',
-        'قواعد اضاءة ماجناتك': './images/قواعد اضاءة ماجناتك .png',
-        'ملحقات وتراكات ماجنتك': './images/ملحقات وتراكات ماجنتك.jpeg',
-      };
-
-      const categoryNamePrefixes = [
-        'قواعد اضاءة كوب',
-        'قواعد اضاءة بنل',
-        'قواعد اضاءة تراك لايت',
-        'قواعد اضاءة مانع توهج',
-        'قواعد اضاءة سبوت لايت',
-        'قواعد اضاءة ماجناتك متحرك',
-        'قواعد اضاءة ماجناتك',
-      ];
-
-      const getCategoryTitle = (product, categoryCode) => {
-        const normalizedName = normalizeProductName(product.item_name);
-        const namePrefix = categoryNamePrefixes.find(prefix => normalizedName.startsWith(prefix));
-        if (namePrefix) return namePrefix.replace(' متحرك', '');
-        if (categoryTitlesByCode[categoryCode]) return categoryTitlesByCode[categoryCode];
-        if (normalizedName.includes('درايفر') || normalizedName.includes('محول طاقة')) return 'درايفرات 48V';
-        if (normalizedName.includes('تراك')) return 'تراكات وملحقات التراك';
-        if (normalizedName.includes('وصلة') || normalizedName.includes('توصيلة')) return 'وصلات التراك';
-        if (normalizedName.includes('مشبك') || normalizedName.includes('صفيحة')) return 'ملحقات تثبيت التراك';
-        if (normalizedName.includes('سلك')) return 'أسلاك التوصيل';
-        return normalizedName.replace(/\s+\d+\s*وات.*$/g, '').replace(/\s+موديل\s+.*$/g, '').trim() || categoryCode;
-      };
-
-      const getCategoryImage = (title) => categoryImagesByTitle[title] || './images/ملحقات وتراكات ماجنتك.jpeg';
+      const wattOptions = [...new Set(catalogProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
+      const kelvinOptions = [...new Set(catalogProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
 
       const renderCategoryImage = (group, sizeClass = 'w-14 h-14') => (
         <div className={`${sizeClass} overflow-hidden rounded-xl border border-slate-600 bg-slate-950 shadow-inner shadow-black/40 shrink-0`}>
@@ -2253,9 +2701,12 @@
         return groups;
       };
 
-      const filteredProducts = mbmProducts.filter(p => {
+      const filteredProducts = catalogProducts.filter(p => {
         const term = searchTerm.toLowerCase();
         const matchesSearch = p.item_name.toLowerCase().includes(term) ||
+          p.display_name.toLowerCase().includes(term) ||
+          p.short_name.toLowerCase().includes(term) ||
+          p.catalog_category.toLowerCase().includes(term) ||
           p.item_number.toLowerCase().includes(term) ||
           p.model.toLowerCase().includes(term);
 
@@ -2550,26 +3001,30 @@
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 lg:flex lg:justify-end">
-              <button
-                type="button"
-                onClick={expandAllGroups}
-                className="min-h-10 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 sm:px-4 py-2 text-sm font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
-                aria-label="توسيع كل الفئات"
-                title="توسيع كل الفئات"
-              >
-                <span className="text-lg sm:hidden">＋</span>
-                <span className="hidden sm:inline">توسيع كل الفئات</span>
-              </button>
-              <button
-                type="button"
-                onClick={collapseAllGroups}
-                className="min-h-10 rounded-lg border border-slate-600 bg-slate-800 px-2 sm:px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-700 transition-colors"
-                aria-label="طي كل الفئات"
-                title="طي كل الفئات"
-              >
-                <span className="text-lg sm:hidden">−</span>
-                <span className="hidden sm:inline">طي كل الفئات</span>
-              </button>
+              {viewMode === 'table' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={expandAllGroups}
+                    className="min-h-10 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 sm:px-4 py-2 text-sm font-bold text-yellow-400 hover:bg-yellow-500 hover:text-slate-950 transition-colors"
+                    aria-label="توسيع كل الفئات"
+                    title="توسيع كل الفئات"
+                  >
+                    <span className="text-lg sm:hidden">＋</span>
+                    <span className="hidden sm:inline">توسيع كل الفئات</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={collapseAllGroups}
+                    className="min-h-10 rounded-lg border border-slate-600 bg-slate-800 px-2 sm:px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-700 transition-colors"
+                    aria-label="طي كل الفئات"
+                    title="طي كل الفئات"
+                  >
+                    <span className="text-lg sm:hidden">−</span>
+                    <span className="hidden sm:inline">طي كل الفئات</span>
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={exportFilteredProductsToExcel}
@@ -2639,6 +3094,38 @@
             </div>
           </div>
 
+          <div data-role="product-view-mode-toggle" className="flex flex-col gap-2 rounded-xl border border-slate-700 bg-slate-900/80 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm font-bold text-slate-300">طريقة العرض</div>
+            <div className="grid grid-cols-2 gap-2 sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                aria-pressed={viewMode === 'cards'}
+                className={`min-h-10 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${viewMode === 'cards'
+                  ? 'border-yellow-500 bg-yellow-500 text-slate-950 shadow-md shadow-yellow-500/20'
+                  : 'border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+              >
+                بطاقات المنتجات
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                aria-pressed={viewMode === 'table'}
+                className={`min-h-10 rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${viewMode === 'table'
+                  ? 'border-yellow-500 bg-yellow-500 text-slate-950 shadow-md shadow-yellow-500/20'
+                  : 'border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+              >
+                جدول المواصفات
+              </button>
+            </div>
+          </div>
+
+          {viewMode === 'cards' && <ProductCatalogCards products={filteredProducts} />}
+
+          {viewMode === 'table' && (
+            <>
           <div data-role="desktop-product-table" className="hidden lg:block overflow-x-auto rounded-xl border border-slate-700 shadow-xl bg-slate-950">
             <table className="w-full text-right border-collapse">
               <thead>
@@ -2790,8 +3277,10 @@
               </section>
             ))}
           </div>
+            </>
+          )}
 
-          {filteredProducts.length === 0 && (
+          {viewMode === 'table' && filteredProducts.length === 0 && (
             <div className="rounded-xl border border-slate-700 bg-slate-950 p-8 sm:p-12 text-center flex flex-col items-center justify-center">
               <span className="text-5xl mb-4 opacity-50">🔍</span>
               <h3 className="text-xl font-bold text-white mb-2">لم يتم العثور على منتجات</h3>
