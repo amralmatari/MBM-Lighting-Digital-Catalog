@@ -1577,6 +1577,7 @@
                 { id: 'terminology', label: 'المفاهيم الفنية (Lumen, CRI...)', shortLabel: 'المفاهيم الفنية' },
                 { id: 'beam_angle', label: 'الزاوية (Beam Angle)', shortLabel: 'زاوية الإضاءة' },
                 { id: 'products', label: 'المنتجات (البحث والفلترة)', shortLabel: 'المنتجات' },
+                { id: 'calculator', label: 'حاسبة الإضاءة', shortLabel: 'الحاسبة' },
                 { id: 'smart_system', label: 'الأنظمة الذكية (48V)', shortLabel: 'الأنظمة الذكية' }
               ].map(tab => (
                 <button
@@ -1599,6 +1600,7 @@
             {activeTab === 'terminology' && <TerminologySection />}
             {activeTab === 'beam_angle' && <BeamAngleSection />}
             {activeTab === 'products' && <ProductsSpecSection />}
+            {activeTab === 'calculator' && <LightingCalculatorSection />}
             {activeTab === 'smart_system' && <SmartSystemSection />}
           </main>
           <CompanyFooter />
@@ -1784,7 +1786,373 @@
       );
     }
 
-    // --- 3. Products Spec Section (Grouped Search & Filters) ---
+    // --- 3. Lighting Calculator Section ---
+    function LightingCalculatorSection() {
+      const DEFAULT_UF = 0.70;
+      const DEFAULT_MF = 0.80;
+
+      const placeLuxLevels = [
+        { name: 'غرفة نوم', lux: 150, description: 'إضاءة هادئة ومريحة للراحة' },
+        { name: 'مجلس', lux: 200, description: 'إضاءة عامة مناسبة للجلوس' },
+        { name: 'صالة', lux: 200, description: 'إضاءة متوازنة للاستخدام اليومي' },
+        { name: 'مطبخ', lux: 400, description: 'إضاءة أقوى لتحضير الطعام والعمل' },
+        { name: 'مكتب', lux: 400, description: 'إضاءة واضحة للقراءة والعمل' },
+        { name: 'محل تجاري', lux: 500, description: 'إضاءة عرض قوية وجاذبة' },
+        { name: 'معرض ديكور', lux: 500, description: 'إضاءة تساعد على إظهار الألوان والتفاصيل' },
+        { name: 'مخزن', lux: 150, description: 'إضاءة عملية للحركة والتخزين' },
+        { name: 'واجهة خارجية', lux: 200, description: 'تقدير أولي حسب هدف الواجهة' },
+        { name: 'مطعم أو كافيه', lux: 200, description: 'إضاءة مريحة للأجواء والجلوس' },
+      ];
+
+      const extractProductLumen = (lumenValue) => {
+        const matches = String(lumenValue || '').match(/\d+(?:\.\d+)?/g);
+        if (!matches) return 0;
+        return Math.max(...matches.map(Number).filter(value => Number.isFinite(value)));
+      };
+
+      const extractFirstNumber = (value) => {
+        const match = String(value || '').match(/\d+(?:\.\d+)?/);
+        return match ? Number(match[0]) : 0;
+      };
+
+      const calculatorProducts = mbmProducts.filter(product => (
+        extractProductLumen(product.lumen) > 0 && product.watt !== null
+      ));
+
+      const [placeType, setPlaceType] = useState(placeLuxLevels[0].name);
+      const [areaMode, setAreaMode] = useState('direct');
+      const [areaInput, setAreaInput] = useState('20');
+      const [lengthInput, setLengthInput] = useState('');
+      const [widthInput, setWidthInput] = useState('');
+      const [selectedProductId, setSelectedProductId] = useState(calculatorProducts[0]?.id?.toString() || '');
+
+      const selectedPlace = placeLuxLevels.find(place => place.name === placeType) || placeLuxLevels[0];
+      const selectedProduct = calculatorProducts.find(product => product.id.toString() === selectedProductId) || calculatorProducts[0];
+      const productLumen = selectedProduct ? extractProductLumen(selectedProduct.lumen) : 0;
+      const productWatt = selectedProduct?.watt || 0;
+      const directArea = Number(areaInput) || 0;
+      const dimensionsArea = (Number(lengthInput) || 0) * (Number(widthInput) || 0);
+      const area = areaMode === 'dimensions' ? dimensionsArea : directArea;
+      const targetLux = selectedPlace.lux;
+      const effectiveLumenPerUnit = productLumen * DEFAULT_UF * DEFAULT_MF;
+      const requiredLumens = area * targetLux;
+      const suggestedUnits = area > 0 && effectiveLumenPerUnit > 0
+        ? Math.ceil(requiredLumens / effectiveLumenPerUnit)
+        : 0;
+      const producedLumens = suggestedUnits * productLumen;
+      const totalWatt = suggestedUnits * productWatt;
+      const estimatedLux = area > 0
+        ? Math.round((suggestedUnits * effectiveLumenPerUnit) / area)
+        : 0;
+      const luxRatio = targetLux > 0 ? estimatedLux / targetLux : 0;
+      const resultStatus = suggestedUnits === 0
+        ? 'none'
+        : luxRatio < 0.9
+          ? 'low'
+          : luxRatio <= 1.25
+            ? 'good'
+            : 'high';
+      const highestLumenProduct = calculatorProducts.reduce((best, product) => (
+        extractProductLumen(product.lumen) > extractProductLumen(best?.lumen) ? product : best
+      ), calculatorProducts[0]);
+
+      const smartWarnings = [];
+      if (suggestedUnits > 20) {
+        smartWarnings.push({
+          title: 'عدد كبير من الوحدات',
+          text: `هذا المنتج قد يحتاج عددًا كبيرًا لهذه المساحة. جرّب منتجًا بلومن أعلى. أعلى خيار متوفر حالياً هو ${highestLumenProduct?.item_name || 'غير متوفر'} (${extractProductLumen(highestLumenProduct?.lumen)} لومن).`,
+        });
+      }
+      if (placeType === 'غرفة نوم' && selectedProduct?.kelvin === '6500K') {
+        smartWarnings.push({
+          title: 'درجة لون باردة',
+          text: 'هذه الدرجة بيضاء باردة وقد لا تكون مريحة لغرف النوم. غالباً تكون 3000K أو 4000K أكثر هدوءاً.',
+        });
+      }
+      const criValue = extractFirstNumber(selectedProduct?.cri);
+      if ((placeType === 'معرض ديكور' || placeType === 'محل تجاري') && criValue < 90) {
+        smartWarnings.push({
+          title: 'دقة الألوان',
+          text: 'يفضل اختيار CRI أعلى لإظهار الألوان بشكل أدق في مساحات العرض والديكور.',
+        });
+      }
+      if (placeType === 'واجهة خارجية') {
+        smartWarnings.push({
+          title: 'ملاءمة الاستخدام الخارجي',
+          text: 'للأماكن الخارجية أو الرطوبة، تأكد من اختيار IP مناسب.',
+        });
+      }
+      const beamAngleValue = extractFirstNumber(selectedProduct?.beam_angle);
+      const generalUsePlaces = ['غرفة نوم', 'مجلس', 'صالة', 'مطبخ', 'مكتب', 'محل تجاري', 'معرض ديكور', 'مخزن', 'مطعم أو كافيه'];
+      if (beamAngleValue > 0 && beamAngleValue <= 30 && generalUsePlaces.includes(placeType)) {
+        smartWarnings.push({
+          title: 'زاوية انتشار ضيقة',
+          text: 'زاوية الإضاءة ضيقة وقد تعطي بقع ضوء مركزة بدل إضاءة عامة. راجع توزيع الوحدات أو جرّب منتجاً بزاوية أوسع.',
+        });
+      }
+
+      const formatNumber = (value, digits = 0) => (
+        Number.isFinite(value) ? value.toLocaleString('en-US', { maximumFractionDigits: digits }) : '0'
+      );
+
+      const statusSegments = [
+        { id: 'low', label: 'أقل من المطلوب' },
+        { id: 'good', label: 'مناسب' },
+        { id: 'high', label: 'أعلى من المطلوب' },
+      ];
+
+      return (
+        <div className="space-y-5 animate-fadeIn">
+          <div className="rounded-2xl border border-slate-700 bg-gradient-to-l from-slate-800 to-slate-900 p-4 sm:p-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">احسب كم وحدة إضاءة تحتاج</h2>
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
+                  اختر نوع المكان، أدخل المساحة، واختر المنتج، وسنحسب لك العدد التقريبي لوحدات الإضاءة المطلوبة بناءً على اللومن.
+                </p>
+              </div>
+              <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-xs text-yellow-300">
+                المنتجات المتاحة للحساب: <span dir="ltr" className="font-mono font-bold">{calculatorProducts.length}</span> من <span dir="ltr" className="font-mono font-bold">{mbmProducts.length}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-4 sm:p-5">
+            <h3 className="mb-3 text-lg font-bold text-white">كيف تستخدم الحاسبة؟</h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {['اختر نوع المكان.', 'أدخل المساحة بالمتر المربع أو الطول والعرض.', 'اختر منتج الإضاءة، وستظهر لك الكمية التقريبية المطلوبة.'].map((step, index) => (
+                <div key={step} className="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-900/80 p-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-yellow-500 text-sm font-extrabold text-slate-950" dir="ltr">{index + 1}</span>
+                  <span className="text-sm leading-relaxed text-slate-200">{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {calculatorProducts.length === 0 ? (
+            <div className="rounded-xl border border-slate-700 bg-slate-950 p-8 text-center">
+              <h3 className="text-xl font-bold text-white">لا توجد منتجات مناسبة للحساب</h3>
+              <p className="mt-2 text-sm text-slate-400">لا يمكن حساب عدد الوحدات لأن قائمة المنتجات الحالية لا تحتوي على قيم Lumen صالحة.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+              <div className="space-y-4">
+                <section className="rounded-xl border border-slate-700 bg-slate-800 p-4 sm:p-5 shadow-lg">
+                  <h3 className="mb-4 text-lg font-bold text-white">بيانات المكان</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-xs font-bold text-slate-400">نوع المكان</label>
+                      <select
+                        value={placeType}
+                        onChange={(event) => setPlaceType(event.target.value)}
+                        className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-yellow-500 focus:outline-none"
+                      >
+                        {placeLuxLevels.map(place => (
+                          <option key={place.name} value={place.name}>{place.name} - {place.lux} Lux</option>
+                        ))}
+                      </select>
+                      <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                        Lux يعني مستوى الإضاءة المطلوب للمكان، وكل استخدام يحتاج مستوى مختلفاً.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold text-slate-400">طريقة إدخال المساحة</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAreaMode('direct')}
+                          className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${areaMode === 'direct' ? 'border-yellow-500 bg-yellow-500 text-slate-950' : 'border-slate-600 bg-slate-900 text-slate-300 hover:bg-slate-700'}`}
+                        >
+                          مساحة مباشرة
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAreaMode('dimensions')}
+                          className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${areaMode === 'dimensions' ? 'border-yellow-500 bg-yellow-500 text-slate-950' : 'border-slate-600 bg-slate-900 text-slate-300 hover:bg-slate-700'}`}
+                        >
+                          طول × عرض
+                        </button>
+                      </div>
+                    </div>
+
+                    {areaMode === 'direct' ? (
+                      <div className="md:col-span-2">
+                        <label className="mb-2 block text-xs font-bold text-slate-400">المساحة بالمتر المربع</label>
+                        <input
+                          type="number"
+                          min="1"
+                          inputMode="decimal"
+                          value={areaInput}
+                          onChange={(event) => setAreaInput(event.target.value)}
+                          className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-yellow-500 focus:outline-none"
+                          placeholder="مثال: 20"
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3 md:col-span-2 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-xs font-bold text-slate-400">الطول بالمتر</label>
+                          <input
+                            type="number"
+                            min="1"
+                            inputMode="decimal"
+                            value={lengthInput}
+                            onChange={(event) => setLengthInput(event.target.value)}
+                            className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-yellow-500 focus:outline-none"
+                            placeholder="مثال: 5"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-xs font-bold text-slate-400">العرض بالمتر</label>
+                          <input
+                            type="number"
+                            min="1"
+                            inputMode="decimal"
+                            value={widthInput}
+                            onChange={(event) => setWidthInput(event.target.value)}
+                            className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-yellow-500 focus:outline-none"
+                            placeholder="مثال: 4"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-xl border border-slate-700 bg-slate-800 p-4 sm:p-5 shadow-lg">
+                  <h3 className="mb-4 text-lg font-bold text-white">المنتج المختار</h3>
+                  <label className="mb-2 block text-xs font-bold text-slate-400">اختر منتجاً يحتوي على قيمة Lumen</label>
+                  <select
+                    value={selectedProduct?.id?.toString() || ''}
+                    onChange={(event) => setSelectedProductId(event.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-slate-900 p-2.5 text-white focus:border-yellow-500 focus:outline-none"
+                  >
+                    {calculatorProducts.map(product => (
+                      <option key={product.id} value={product.id.toString()}>
+                        {product.item_name} - {extractProductLumen(product.lumen)} لومن
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedProduct && (
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <div className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <div className="text-[11px] text-slate-500">Lumen</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-yellow-400" dir="ltr">{formatNumber(productLumen)}</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <div className="text-[11px] text-slate-500">Watt</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-white" dir="ltr">{formatNumber(productWatt)}</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <div className="text-[11px] text-slate-500">Kelvin</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-white" dir="ltr">{selectedProduct.kelvin || '-'}</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <div className="text-[11px] text-slate-500">CRI</div>
+                        <div className="mt-1 font-mono text-lg font-bold text-white" dir="ltr">{selectedProduct.cri || '-'}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('calculator-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="mt-4 w-full min-h-11 rounded-lg border border-yellow-500/40 bg-yellow-500 px-4 py-2 text-sm font-extrabold text-slate-950 shadow-md shadow-yellow-500/20 transition-colors hover:bg-yellow-400"
+                  >
+                    احسب الآن
+                  </button>
+                </section>
+              </div>
+
+              <section id="calculator-result" className="scroll-mt-28 rounded-xl border border-yellow-500/30 bg-slate-950 p-4 sm:p-5 shadow-xl shadow-black/20">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">النتيجة التقريبية</h3>
+                    <p className="mt-1 text-xs text-slate-400">باستخدام UF = <span dir="ltr" className="font-mono">{DEFAULT_UF}</span> و MF = <span dir="ltr" className="font-mono">{DEFAULT_MF}</span></p>
+                  </div>
+                  <span className="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-3 py-1 text-xs font-bold text-yellow-400">MVP</span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 text-center">
+                  <div className="text-sm font-bold text-slate-400">العدد المقترح</div>
+                  <div className="mt-2 text-6xl font-extrabold text-yellow-400" dir="ltr">{formatNumber(suggestedUnits)}</div>
+                  <div className="mt-1 text-sm text-slate-300">وحدة إضاءة تقريباً</div>
+                  {area <= 0 && <div className="mt-3 text-xs text-red-300">أدخل مساحة صحيحة لعرض النتيجة.</div>}
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">المساحة</div>
+                    <div className="mt-1 font-mono text-base font-bold text-white" dir="ltr">{formatNumber(area, 2)} m²</div>
+                  </div>
+                  <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">نوع المكان</div>
+                    <div className="mt-1 text-sm font-bold text-white">{placeType}</div>
+                  </div>
+                  <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">Lux المعتمد</div>
+                    <div className="mt-1 font-mono text-base font-bold text-white" dir="ltr">{formatNumber(targetLux)} Lux</div>
+                  </div>
+                  <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">مستوى الإضاءة المتوقع</div>
+                    <div className="mt-1 font-mono text-base font-bold text-emerald-300" dir="ltr">{formatNumber(estimatedLux)} Lux</div>
+                  </div>
+                  <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">إجمالي اللومن الناتج</div>
+                    <div className="mt-1 font-mono text-base font-bold text-white" dir="ltr">{formatNumber(producedLumens)} lm</div>
+                  </div>
+                  <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">إجمالي الواط</div>
+                    <div className="mt-1 font-mono text-base font-bold text-white" dir="ltr">{formatNumber(totalWatt)} W</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                  <div className="mb-2 text-xs font-bold text-slate-400">حالة النتيجة</div>
+                  <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-lg border border-slate-700 bg-slate-950 p-1">
+                    {statusSegments.map(segment => (
+                      <div
+                        key={segment.id}
+                        className={`rounded-md px-2 py-2 text-center text-[11px] font-bold transition-colors ${resultStatus === segment.id ? 'bg-yellow-500 text-slate-950' : 'bg-slate-900 text-slate-500'}`}
+                      >
+                        {segment.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedProduct && (
+                  <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-[11px] text-slate-500">المنتج المستخدم في الحساب</div>
+                    <div className="mt-1 text-sm font-bold leading-relaxed text-white">{selectedProduct.item_name}</div>
+                    <div className="mt-1 font-mono text-xs text-yellow-500" dir="ltr">{selectedProduct.item_number}</div>
+                  </div>
+                )}
+
+                {smartWarnings.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {smartWarnings.map(warning => (
+                      <div key={`${warning.title}-${warning.text}`} className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                        <div className="text-sm font-bold text-amber-300">{warning.title}</div>
+                        <p className="mt-1 text-xs leading-relaxed text-amber-100/90">{warning.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs leading-relaxed text-slate-400">
+                  هذه النتيجة تقديرية لمساعدتك على اختيار الكمية المناسبة مبدئيًا. قد تختلف النتيجة حسب ارتفاع السقف، لون الجدران، توزيع وحدات الإضاءة، وزاوية انتشار الضوء. للمشاريع الكبيرة أو الحساسة يُفضل مراجعة مختص إضاءة.
+                </div>
+              </section>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- 4. Products Spec Section (Grouped Search & Filters) ---
     function ProductsSpecSection() {
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedWatt, setSelectedWatt] = useState('All');
