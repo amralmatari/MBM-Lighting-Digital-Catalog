@@ -21,6 +21,16 @@ globalThis.__hasProductCategoryCards = typeof ProductCategoryCards === "function
 globalThis.__hasProductCategoryCard = typeof ProductCategoryCard === "function";
 globalThis.__hasCategoryDetailsModal = typeof CategoryDetailsModal === "function";
 globalThis.__hasCategoryVariantTable = typeof CategoryVariantTable === "function";
+globalThis.__hasVariantMobileCards = typeof VariantMobileCards === "function";
+globalThis.__hasCommonFeaturesBlock = typeof CommonFeaturesBlock === "function";
+globalThis.__hasShouldShowVariantImages = typeof shouldShowVariantImages === "function";
+globalThis.__hasCollectCommonFeatures = typeof collectCommonFeatures === "function";
+globalThis.__cupShowsVariantImages = shouldShowVariantImages(catalogCategoryCards.find((card) => card.card_id === "lighting::07-001-14"));
+globalThis.__magneticShowsVariantImages = shouldShowVariantImages(catalogCategoryCards.find((card) => card.card_id === "lighting::07-001-17"));
+globalThis.__driverShowsVariantImages = shouldShowVariantImages(catalogCategoryCards.find((card) => card.card_id === "system::drivers"));
+globalThis.__cupCommonFeatures = collectCommonFeatures(catalogCategoryCards.find((card) => card.card_id === "lighting::07-001-14").products);
+globalThis.__cupShowUgr = shouldShowUgrColumn(catalogCategoryCards.find((card) => card.card_id === "lighting::07-001-14").products);
+globalThis.__antiGlareShowUgr = shouldShowUgrColumn(catalogCategoryCards.find((card) => card.card_id === "lighting::07-001-15").products);
 globalThis.__hasProductImage = typeof ProductImage === "function";
 `;
 
@@ -153,6 +163,10 @@ if (!runtimeContext.__hasCategoryDetailsModal || !runtimeContext.__hasCategoryVa
   throw new Error("Expected Phase 2B category details modal components to be defined at runtime.");
 }
 
+if (!runtimeContext.__hasVariantMobileCards || !runtimeContext.__hasCommonFeaturesBlock || !runtimeContext.__hasShouldShowVariantImages || !runtimeContext.__hasCollectCommonFeatures) {
+  throw new Error("Expected Phase 2B-Fix responsive variant detail helpers/components to be defined at runtime.");
+}
+
 if (!runtimeContext.__catalogFamilyCount || runtimeContext.__catalogFamilyCount >= runtimeContext.__catalogCount) {
   throw new Error(`Expected catalogFamilies to group SKUs into fewer families than products, got ${runtimeContext.__catalogFamilyCount} families for ${runtimeContext.__catalogCount} products.`);
 }
@@ -212,6 +226,18 @@ if (JSON.stringify(cupCategoryCard.available_watts) !== JSON.stringify([7, 12, 2
 }
 if (JSON.stringify(cupCategoryCard.available_kelvins) !== JSON.stringify(["3000K", "4000K", "6500K"])) {
   throw new Error(`Expected cup category kelvins [3000K,4000K,6500K], got ${JSON.stringify(cupCategoryCard.available_kelvins)}`);
+}
+if (runtimeContext.__cupShowsVariantImages !== false) {
+  throw new Error("Cup category should not show SKU thumbnails by default.");
+}
+if (runtimeContext.__magneticShowsVariantImages !== true || runtimeContext.__driverShowsVariantImages !== true) {
+  throw new Error("Magnetic and driver categories should show SKU thumbnails.");
+}
+if (!runtimeContext.__cupCommonFeatures.includes("اختيار COB أو SMD؛ عاكس وناشر ضوء اختياريان حسب احتياج الإضاءة.")) {
+  throw new Error("Expected cup category common features to be detected.");
+}
+if (runtimeContext.__cupShowUgr !== false || runtimeContext.__antiGlareShowUgr !== true) {
+  throw new Error("Expected UGR column to be conditional by category values.");
 }
 for (const model of ["CY107", "CY112", "CY120"]) {
   const modelCard = runtimeContext.__catalogCategoryCards.find((card) => card.display_title.includes(model));

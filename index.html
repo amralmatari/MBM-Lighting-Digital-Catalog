@@ -2863,6 +2863,63 @@
       return String(a.item_number || '').localeCompare(String(b.item_number || ''), 'en', { numeric: true });
     });
 
+    const formatVariantSpecValue = (value, fallback = '—') => (
+      value === null || value === undefined || value === '' || value === '-' ? fallback : value
+    );
+
+    const shouldShowUgrColumn = (products = []) => products.some(product => (
+      formatVariantSpecValue(product.ugr, '') !== ''
+    ));
+
+    const shouldShowVariantImages = (card) => {
+      const title = `${card.display_title || ''} ${card.category_title || ''}`;
+      return card.card_type === 'system_accessory_group' ||
+        ['ماجنتك', 'تراكات', 'وصلات', 'دريفرات', 'ملحقات', 'كابلات'].some(keyword => title.includes(keyword)) ||
+        card.products.some(product => ['magnetic_light', 'magnetic_track', 'driver', 'connector', 'cable', 'mounting_accessory', 'accessory'].includes(product.product_type));
+    };
+
+    const getVariantImagePath = (product) => {
+      const placeholderPaths = Object.values(catalogImagePlaceholders);
+      if (product.product_image && !placeholderPaths.includes(product.product_image)) return product.product_image;
+      if (product.product_image_path_expected) return product.product_image_path_expected;
+      return '';
+    };
+
+    const collectCommonFeatures = (products = []) => {
+      const featureCounts = {};
+      products.forEach(product => {
+        const feature = formatVariantSpecValue(product.features, '');
+        if (!feature) return;
+        featureCounts[feature] = (featureCounts[feature] || 0) + 1;
+      });
+      const threshold = Math.max(1, Math.ceil(products.length * 0.6));
+      return Object.entries(featureCounts)
+        .filter(([, count]) => count >= threshold)
+        .map(([feature]) => feature);
+    };
+
+    const getUniqueCommonFeatures = (products = []) => [...new Set(collectCommonFeatures(products))];
+
+    const hasVariantSpecificFeatures = (product, commonFeatures = []) => {
+      const feature = formatVariantSpecValue(product.features, '');
+      return Boolean(feature && !commonFeatures.includes(feature));
+    };
+
+    const getCompactVariantName = (product) => {
+      const model = formatVariantSpecValue(product.model, '');
+      const watt = product.watt_value || product.watt;
+      const kelvin = formatVariantSpecValue(product.kelvin, '');
+      return [model, watt ? `${watt}W` : '', kelvin].filter(Boolean).join(' — ') || product.display_name || product.item_name;
+    };
+
+    const getVariantPrimaryLine = (product) => [
+      formatVariantLumen(product),
+      formatVariantSpecValue(product.cri, '') ? `CRI ${product.cri}` : '',
+      formatVariantSpecValue(product.beam_angle, ''),
+    ].filter(Boolean).join(' | ');
+
+    const hasLongTechnicalSpecs = (product) => String(product.technical_specs || '').length > 40;
+
     function DetailImageBlock({ title, image, imageStatus, alt, icon = '□' }) {
       const [imageFailed, setImageFailed] = useState(false);
       const shouldUsePlaceholder = imageFailed || imageStatus === 'placeholder' || !image;
@@ -3012,49 +3069,220 @@
       );
     }
 
-    function CategoryVariantTable({ products }) {
+    function VariantThumbnail({ product, showImage }) {
+      const [imageFailed, setImageFailed] = useState(false);
+      const imagePath = getVariantImagePath(product);
+
+      if (!showImage) return null;
+
+      if (!imagePath || imageFailed) {
+        return (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 text-[10px] font-bold text-slate-500">
+            صورة
+          </div>
+        );
+      }
+
+      return (
+        <img
+          src={imagePath}
+          alt={product.display_name || product.item_name || 'صورة صنف MBM LIGHTING'}
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+          className="h-12 w-12 shrink-0 rounded-lg border border-slate-700 bg-slate-950 object-contain p-1"
+        />
+      );
+    }
+
+    function CommonFeaturesBlock({ products }) {
+      const commonFeatures = getUniqueCommonFeatures(products);
+      if (commonFeatures.length === 0) return null;
+
+      return (
+        <section className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4">
+          <h3 className="text-sm font-bold text-yellow-300">مميزات مشتركة في هذه الفئة</h3>
+          <div className="mt-3 space-y-2">
+            {commonFeatures.map(feature => (
+              <p key={feature} className="rounded-lg border border-yellow-500/20 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-200">
+                {feature}
+              </p>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function VariantTechnicalDetails({ product, commonFeatures = [] }) {
+      const variantFeature = hasVariantSpecificFeatures(product, commonFeatures)
+        ? formatVariantSpecValue(product.features, '')
+        : '';
+
+      return (
+        <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-800 bg-slate-950/80 p-3 text-xs leading-relaxed md:grid-cols-2">
+          <div>
+            <div className="font-bold text-slate-500">اسم الصنف الكامل</div>
+            <div className="mt-1 text-slate-200">{formatVariantSpecValue(product.item_name)}</div>
+          </div>
+          <div>
+            <div className="font-bold text-slate-500">المواصفات الفنية</div>
+            <div className="mt-1 text-slate-300">{formatVariantSpecValue(product.technical_specs)}</div>
+          </div>
+          {variantFeature && (
+            <div className="md:col-span-2">
+              <div className="font-bold text-slate-500">مميزات خاصة بهذا الصنف</div>
+              <div className="mt-1 text-slate-300">{variantFeature}</div>
+            </div>
+          )}
+          {formatVariantSpecValue(product.ugr, '') && (
+            <div>
+              <div className="font-bold text-slate-500">UGR</div>
+              <div className="mt-1 text-slate-300">{product.ugr}</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ExpandableVariantDetails({ product, commonFeatures = [], compact = false }) {
+      const [isExpanded, setIsExpanded] = useState(false);
+      const hasDetails = Boolean(product.item_name || product.technical_specs || hasVariantSpecificFeatures(product, commonFeatures) || formatVariantSpecValue(product.ugr, ''));
+
+      if (!hasDetails) return null;
+
+      return (
+        <div className={compact ? 'mt-3' : 'mt-2'}>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(current => !current)}
+            aria-expanded={isExpanded}
+            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-yellow-300 hover:border-yellow-500 hover:bg-yellow-500 hover:text-slate-950"
+          >
+            تفاصيل إضافية
+          </button>
+          {isExpanded && (
+            <div className="mt-2">
+              <VariantTechnicalDetails product={product} commonFeatures={commonFeatures} />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function VariantDesktopRow({ product, showImage, showUgr, commonFeatures }) {
+      const [isExpanded, setIsExpanded] = useState(false);
+      const detailColSpan = 8 + (showImage ? 1 : 0) + (showUgr ? 1 : 0);
+      const hasDetails = Boolean(product.item_name || product.technical_specs || hasVariantSpecificFeatures(product, commonFeatures) || formatVariantSpecValue(product.ugr, ''));
+
+      return (
+        <>
+          <tr className="border-t border-slate-800 align-top hover:bg-slate-900/70">
+            {showImage && (
+              <td className="p-3">
+                <VariantThumbnail product={product} showImage={showImage} />
+              </td>
+            )}
+            <td className="p-3 font-mono text-yellow-400" dir="ltr">{product.item_number}</td>
+            <td className="p-3 font-mono text-slate-200" dir="ltr">{formatVariantSpecValue(product.model)}</td>
+            <td className="p-3 text-slate-200">{formatVariantWatt(product)}</td>
+            <td className="p-3 font-mono text-slate-200" dir="ltr">{formatVariantSpecValue(product.kelvin)}</td>
+            <td className={`p-3 font-mono ${product.has_valid_lumen ? 'text-emerald-300' : 'text-amber-300'}`} dir="ltr">{formatVariantLumen(product)}</td>
+            <td className="p-3 text-slate-300">{formatVariantSpecValue(product.cri)}</td>
+            <td className="p-3 text-slate-300">{formatVariantSpecValue(product.beam_angle)}</td>
+            {showUgr && <td className="p-3 text-slate-300">{formatVariantSpecValue(product.ugr)}</td>}
+            <td className="p-3">
+              <VariantStatusBadges product={product} />
+              {hasDetails && (
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(current => !current)}
+                  aria-expanded={isExpanded}
+                  className="mt-2 rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-yellow-300 hover:border-yellow-500 hover:bg-yellow-500 hover:text-slate-950"
+                >
+                  تفاصيل إضافية
+                </button>
+              )}
+            </td>
+          </tr>
+          {isExpanded && (
+            <tr className="border-t border-slate-800 bg-slate-950/60">
+              <td colSpan={detailColSpan} className="p-3">
+                <VariantTechnicalDetails product={product} commonFeatures={commonFeatures} />
+              </td>
+            </tr>
+          )}
+        </>
+      );
+    }
+
+    function VariantMobileCard({ product, showImage, commonFeatures }) {
+      return (
+        <article className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+          <div className="flex items-start gap-3">
+            <VariantThumbnail product={product} showImage={showImage} />
+            <div className="min-w-0 flex-1">
+              <h4 className="text-sm font-extrabold leading-relaxed text-white">{getCompactVariantName(product)}</h4>
+              <div className="mt-1 font-mono text-xs text-yellow-400" dir="ltr">{product.item_number}</div>
+              <div className="mt-2 text-xs text-slate-300" dir="ltr">{getVariantPrimaryLine(product)}</div>
+            </div>
+          </div>
+          <div className="mt-3">
+            <VariantStatusBadges product={product} />
+          </div>
+          <ExpandableVariantDetails product={product} commonFeatures={commonFeatures} compact />
+        </article>
+      );
+    }
+
+    function VariantMobileCards({ products, showImages, commonFeatures }) {
       const sortedProducts = sortCategoryVariants(products);
 
       return (
-        <section className="rounded-xl border border-slate-700 bg-slate-950 shadow-xl">
+        <section className="block space-y-3 md:hidden">
+          <div>
+            <h3 className="text-lg font-bold text-white">الأصناف والموديلات داخل الفئة</h3>
+            <p className="mt-1 text-xs text-slate-500">عرض مختصر مناسب للجوال لكل SKU.</p>
+          </div>
+          {sortedProducts.map(product => (
+            <VariantMobileCard key={product.item_number} product={product} showImage={showImages} commonFeatures={commonFeatures} />
+          ))}
+        </section>
+      );
+    }
+
+    function CategoryVariantTable({ products, showImages = false, commonFeatures = [], showUgr = false }) {
+      const sortedProducts = sortCategoryVariants(products);
+
+      return (
+        <section className="hidden rounded-xl border border-slate-700 bg-slate-950 shadow-xl md:block">
           <div className="border-b border-slate-800 p-4">
             <h3 className="text-lg font-bold text-white">الأصناف والموديلات داخل الفئة</h3>
-            <p className="mt-1 text-xs text-slate-500">تفاصيل SKU لكل لون وواط وموديل ضمن هذه الفئة.</p>
+            <p className="mt-1 text-xs text-slate-500">جدول مختصر لكل SKU، مع تفاصيل إضافية عند الحاجة.</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-right text-xs">
+            <table className="w-full min-w-[760px] text-right text-xs">
               <thead className="bg-slate-900 text-slate-300">
                 <tr>
+                  {showImages && <th className="p-3 font-bold">صورة</th>}
                   <th className="p-3 font-bold">رقم الصنف</th>
-                  <th className="p-3 font-bold">اسم الصنف</th>
                   <th className="p-3 font-bold">الموديل</th>
                   <th className="p-3 font-bold">الواط</th>
                   <th className="p-3 font-bold">الكيلفن</th>
                   <th className="p-3 font-bold">اللومن</th>
                   <th className="p-3 font-bold">CRI</th>
                   <th className="p-3 font-bold">الزاوية</th>
-                  <th className="p-3 font-bold">UGR</th>
+                  {showUgr && <th className="p-3 font-bold">UGR</th>}
                   <th className="p-3 font-bold">الحالة</th>
-                  <th className="p-3 font-bold">المواصفات الفنية</th>
-                  <th className="p-3 font-bold">المميزات</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedProducts.map(product => (
-                  <tr key={product.item_number} className="border-t border-slate-800 align-top hover:bg-slate-900/70">
-                    <td className="p-3 font-mono text-yellow-400" dir="ltr">{product.item_number}</td>
-                    <td className="max-w-[16rem] p-3 leading-relaxed text-slate-100">{product.item_name}</td>
-                    <td className="p-3 font-mono text-slate-200" dir="ltr">{formatDetailValue(product.model)}</td>
-                    <td className="p-3 text-slate-200">{formatVariantWatt(product)}</td>
-                    <td className="p-3 font-mono text-slate-200" dir="ltr">{formatDetailValue(product.kelvin)}</td>
-                    <td className={`p-3 font-mono ${product.has_valid_lumen ? 'text-emerald-300' : 'text-amber-300'}`} dir="ltr">{formatVariantLumen(product)}</td>
-                    <td className="p-3 text-slate-300">{formatDetailValue(product.cri)}</td>
-                    <td className="p-3 text-slate-300">{formatDetailValue(product.beam_angle)}</td>
-                    <td className="p-3 text-slate-300">{formatDetailValue(product.ugr)}</td>
-                    <td className="p-3"><VariantStatusBadges product={product} /></td>
-                    <td className="max-w-[18rem] p-3 leading-relaxed text-slate-400">{formatDetailValue(product.technical_specs)}</td>
-                    <td className="max-w-[18rem] p-3 leading-relaxed text-slate-400">{formatDetailValue(product.features)}</td>
-                  </tr>
+                  <VariantDesktopRow
+                    key={product.item_number}
+                    product={product}
+                    showImage={showImages}
+                    showUgr={showUgr}
+                    commonFeatures={commonFeatures}
+                  />
                 ))}
               </tbody>
             </table>
@@ -3075,6 +3303,9 @@
 
       if (!isOpen || !card) return null;
 
+      const showVariantImages = shouldShowVariantImages(card);
+      const commonFeatures = getUniqueCommonFeatures(card.products);
+      const showUgr = shouldShowUgrColumn(card.products);
       const detailNotes = [...new Set([
         ...(card.notes || []),
         ...(card.products.some(product => !product.has_valid_lumen)
@@ -3100,7 +3331,9 @@
               <div className="space-y-4 p-4 sm:p-5">
                 <CategoryDetailsImages card={card} />
                 <CategorySummaryGrid card={card} />
-                <CategoryVariantTable products={card.products} />
+                <CommonFeaturesBlock products={card.products} />
+                <VariantMobileCards products={card.products} showImages={showVariantImages} commonFeatures={commonFeatures} />
+                <CategoryVariantTable products={card.products} showImages={showVariantImages} commonFeatures={commonFeatures} showUgr={showUgr} />
                 {detailNotes.length > 0 && (
                   <section className="rounded-xl border border-slate-700 bg-slate-900/80 p-4">
                     <h3 className="text-sm font-bold text-white">ملاحظات الفئة</h3>
