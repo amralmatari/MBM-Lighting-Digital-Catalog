@@ -1781,6 +1781,273 @@
 
     const catalogProducts = mbmProducts.map(enrichProductForCatalog);
 
+    // --- Product Family Grouping Layer ---
+    // Phase 2A-Fix: groups catalog SKUs/variants into product families for catalog card display.
+    const isValidModel = (model) => {
+      const normalizedModel = String(model ?? '').trim();
+      return normalizedModel !== '' && normalizedModel !== '-' && normalizedModel.toLowerCase() !== 'n/a';
+    };
+
+    const normalizeFamilyName = (value) => String(value || '')
+      .replace(/\b(?:3000|4000|6000|6500)\s*K?\b/gi, '')
+      .replace(/\s*لون\s*/g, ' ')
+      .replace(/\s+\d+(?:\.\d+)?\s*وات\b/g, ' ')
+      .replace(/\s+موديل\s+\S+/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    const getFamilyGroupKey = (product) => {
+      const productType = product.product_type || getProductType(product);
+      const normalizedModel = String(product.model || '').trim();
+      if (isValidModel(product.model)) {
+        return `${productType}::model::${normalizedModel.toLowerCase()}`;
+      }
+      const baseName = normalizeFamilyName(product.item_name || product.display_name || product.short_name);
+      return `${productType}::name::${baseName.toLowerCase()}`;
+    };
+
+    const getUniqueSortedNumbers = (values) => {
+      const uniqueNumbers = [...new Set(values.map(Number).filter(value => Number.isFinite(value) && value > 0))];
+      return uniqueNumbers.sort((a, b) => a - b);
+    };
+
+    const getUniqueCleanValues = (values) => {
+      const cleanValues = values
+        .map(value => String(value || '').trim())
+        .filter(value => value && value !== '-');
+      return [...new Set(cleanValues)].sort((a, b) => {
+        const numericA = parseNumericValue(a);
+        const numericB = parseNumericValue(b);
+        if (numericA && numericB && numericA !== numericB) return numericA - numericB;
+        return a.localeCompare(b, 'ar');
+      });
+    };
+
+    const hiddenFamilyCardBadges = ['مناسب للحاسبة', 'لومن متوفر'];
+
+    const collectFamilyBadges = (variants) => {
+      const badges = variants.flatMap(product => product.badges || [])
+        .filter(badge => !hiddenFamilyCardBadges.includes(badge));
+      return [...new Set(badges)];
+    };
+
+    const collectFamilyRecommendedUses = (variants) => {
+      const uses = variants.flatMap(product => product.recommended_use || []);
+      return [...new Set(uses)];
+    };
+
+    const getFamilyDisplayName = (product, variants) => {
+      const productType = product.product_type || getProductType(product);
+      const meta = productCategoryMeta[productType] || productCategoryMeta.unknown;
+      if (isValidModel(product.model)) return `${meta.label} ${product.model}`;
+      if (variants.length === 1) return product.display_name || product.short_name || normalizeProductName(product.item_name);
+      return [meta.label, normalizeFamilyName(product.item_name)].filter(Boolean).join(' ');
+    };
+
+    const groupCatalogProductsIntoFamilies = (products) => {
+      const familyMap = {};
+      const families = [];
+
+      products.forEach(product => {
+        const familyKey = getFamilyGroupKey(product);
+        if (!familyMap[familyKey]) {
+          familyMap[familyKey] = {
+            family_id: familyKey,
+            representative_product: product,
+            variants: [],
+          };
+          families.push(familyMap[familyKey]);
+        }
+        familyMap[familyKey].variants.push(product);
+      });
+
+      return families.map(family => {
+        const variants = family.variants;
+        const representativeProduct = variants.find(product => product.is_lighting_unit) || variants[0];
+        const productType = representativeProduct.product_type || getProductType(representativeProduct);
+        const model = isValidModel(representativeProduct.model) ? representativeProduct.model : null;
+        const familyName = getFamilyDisplayName(representativeProduct, variants);
+        const availableWatts = getUniqueSortedNumbers(variants.map(product => product.watt_value || product.watt));
+        const availableKelvins = getUniqueCleanValues(variants.map(product => product.kelvin));
+        const availableLumens = getUniqueSortedNumbers(variants.map(product => product.lumen_value));
+        const availableCri = getUniqueCleanValues(variants.map(product => product.cri));
+        const availableBeamAngles = getUniqueCleanValues(variants.map(product => product.beam_angle));
+        const familyNotes = [...new Set(variants.flatMap(product => product.catalog_notes || []))];
+
+        return {
+          family_id: family.family_id,
+          family_name: familyName,
+          short_family_name: model ? `${productCategoryMeta[productType]?.label || 'منتج'} ${model}` : representativeProduct.short_name,
+          catalog_category: representativeProduct.catalog_category,
+          product_type: productType,
+          model,
+          representative_product: representativeProduct,
+          variants,
+          variant_count: variants.length,
+          available_watts: availableWatts,
+          available_kelvins: availableKelvins,
+          available_lumens: availableLumens,
+          available_cri: availableCri,
+          available_beam_angles: availableBeamAngles,
+          recommended_use: collectFamilyRecommendedUses(variants),
+          badges: collectFamilyBadges(variants),
+          has_lighting_unit: variants.some(product => product.is_lighting_unit),
+          has_accessory_variant: variants.some(product => product.is_accessory),
+          has_calculator_ready_variant: variants.some(product => product.is_calculator_ready),
+          has_missing_lumen_variant: variants.some(product => !product.has_valid_lumen),
+          product_image: representativeProduct.product_image,
+          application_image: representativeProduct.application_image,
+          image_status: representativeProduct.image_status,
+          family_notes: familyNotes,
+        };
+      });
+    };
+
+    const catalogFamilies = groupCatalogProductsIntoFamilies(catalogProducts);
+
+    // --- Category-Level Catalog Cards Layer ---
+    // Phase 2A-Fix-2: groups catalog SKUs into category-level cards for the visual catalog view.
+    // Cards represent main product categories, while table view keeps SKU-level details.
+    const categoryCardTitleByCode = {
+      '07-001-14': 'قواعد إضاءة كوب',
+      '07-001-01': 'قواعد إضاءة بنل',
+      '07-001-16': 'قواعد إضاءة تراك لايت',
+      '07-001-15': 'قواعد إضاءة مانع توهج',
+      '07-001-06': 'قواعد إضاءة سبوت لايت',
+      '07-001-17': 'قواعد إضاءة ماجنتك',
+    };
+
+    const systemAccessoryGroupMeta = {
+      tracks: { title: 'تراكات', productTypes: ['magnetic_track'], keywords: ['تراك'] },
+      connectors: { title: 'وصلات', productTypes: ['connector'], keywords: ['وصلة', 'توصيلة', 'زاوية', 'رباعية'] },
+      drivers: { title: 'دريفرات', productTypes: ['driver'], keywords: ['درايفر', 'محول طاقة'] },
+      cables: { title: 'كابلات', productTypes: ['cable'], keywords: ['سلك'] },
+      track_accessories: { title: 'ملحقات التراك', productTypes: ['mounting_accessory'], keywords: ['مشبك', 'صفيحة', 'غطاء'] },
+      other: { title: 'أخرى', productTypes: ['accessory', 'unknown'], keywords: [] },
+    };
+
+    const isSystemAccessoryProduct = (product) => {
+      const itemName = String(product?.item_name || '');
+      return product?.is_accessory ||
+        product?.is_driver ||
+        product?.is_track ||
+        ['driver', 'connector', 'cable', 'accessory', 'mounting_accessory', 'magnetic_track'].includes(product?.product_type) ||
+        ['درايفر', 'محول طاقة', 'وصلة', 'توصيلة', 'تراك', 'مشبك', 'صفيحة', 'سلك', 'غطاء'].some(keyword => itemName.includes(keyword));
+    };
+
+    const getSystemAccessoryGroup = (product) => {
+      const itemName = String(product?.item_name || '');
+      if (product.product_type === 'driver' || itemName.includes('درايفر') || itemName.includes('محول طاقة')) return 'drivers';
+      if (product.product_type === 'connector' || ['وصلة', 'توصيلة', 'زاوية', 'رباعية'].some(keyword => itemName.includes(keyword))) return 'connectors';
+      if (product.product_type === 'cable' || itemName.includes('سلك')) return 'cables';
+      if (product.product_type === 'mounting_accessory' || ['مشبك', 'صفيحة', 'غطاء'].some(keyword => itemName.includes(keyword))) return 'track_accessories';
+      if (product.product_type === 'magnetic_track' || itemName.includes('تراك')) return 'tracks';
+      return 'other';
+    };
+
+    const getCategoryCardGroupKey = (product) => {
+      if (isSystemAccessoryProduct(product)) return `system::${getSystemAccessoryGroup(product)}`;
+      const categoryCode = getItemCategoryCode(product.item_number);
+      if (categoryCode) return `lighting::${categoryCode}`;
+      return `lighting::${product.catalog_category || product.product_type || 'unknown'}`;
+    };
+
+    const getCategoryCardTitle = (product) => {
+      if (isSystemAccessoryProduct(product)) return systemAccessoryGroupMeta[getSystemAccessoryGroup(product)]?.title || 'أخرى';
+      const categoryCode = getItemCategoryCode(product.item_number);
+      return categoryCardTitleByCode[categoryCode] || product.catalog_category || getCategoryTitle(product, categoryCode);
+    };
+
+    const getCategoryCardSubtitle = (card) => (
+      card.card_type === 'lighting_category'
+        ? `${card.model_count} موديلات ضمن ${card.variant_count} صنف`
+        : `${card.variant_count} صنف ضمن ${card.display_title}`
+    );
+
+    const collectCategoryCardWatts = (products) => getUniqueSortedNumbers(products.map(product => product.watt_value || product.watt));
+
+    const collectCategoryCardKelvins = (products) => getUniqueCleanValues(products.map(product => product.kelvin));
+
+    const collectCategoryCardModels = (products) => getUniqueCleanValues(products.map(product => isValidModel(product.model) ? product.model : ''));
+
+    const collectCategoryCardBadges = (products) => collectFamilyBadges(products).map(badge => (
+      badge === 'ملحق' ? 'ملحقات' : badge === 'درايفر' ? 'دريفرات' : badge
+    ));
+
+    const collectCategoryCardRecommendedUses = (products) => collectFamilyRecommendedUses(products);
+
+    const getRepresentativeCategoryProduct = (products) => (
+      products.find(product => product.is_lighting_unit) || products[0]
+    );
+
+    const getCategoryImageForCard = (displayTitle, fallbackTitle) => {
+      const normalizedFallback = fallbackTitle || displayTitle.replace('إضاءة', 'اضاءة');
+      return categoryImagesByTitle[normalizedFallback] || categoryImagesByTitle[displayTitle] || catalogImagePlaceholders.product;
+    };
+
+    const groupCatalogProductsIntoCategoryCards = (products) => {
+      const cardMap = {};
+      const cards = [];
+
+      products.forEach(product => {
+        const cardKey = getCategoryCardGroupKey(product);
+        if (!cardMap[cardKey]) {
+          cardMap[cardKey] = {
+            card_id: cardKey,
+            products: [],
+          };
+          cards.push(cardMap[cardKey]);
+        }
+        cardMap[cardKey].products.push(product);
+      });
+
+      return cards.map(card => {
+        const productsInCard = card.products;
+        const representativeProduct = getRepresentativeCategoryProduct(productsInCard);
+        const isAccessoryGroup = card.card_id.startsWith('system::');
+        const categoryCode = isAccessoryGroup ? null : getItemCategoryCode(representativeProduct.item_number);
+        const displayTitle = getCategoryCardTitle(representativeProduct);
+        const fallbackCategoryTitle = categoryCode ? categoryTitlesByCode[categoryCode] : null;
+        const models = collectCategoryCardModels(productsInCard);
+        const cardBadges = collectCategoryCardBadges(productsInCard);
+        const imagePath = isAccessoryGroup
+          ? catalogImagePlaceholders.product
+          : getCategoryImageForCard(displayTitle, fallbackCategoryTitle);
+
+        const categoryCard = {
+          card_id: card.card_id,
+          card_type: isAccessoryGroup ? 'system_accessory_group' : 'lighting_category',
+          category_code: categoryCode,
+          category_title: displayTitle,
+          display_title: displayTitle,
+          subtitle: '',
+          products: productsInCard,
+          variant_count: productsInCard.length,
+          model_count: models.length,
+          available_models: models,
+          available_watts: collectCategoryCardWatts(productsInCard),
+          available_kelvins: collectCategoryCardKelvins(productsInCard),
+          available_lumens: getUniqueSortedNumbers(productsInCard.map(product => product.lumen_value)),
+          available_cri: getUniqueCleanValues(productsInCard.map(product => product.cri)),
+          available_beam_angles: getUniqueCleanValues(productsInCard.map(product => product.beam_angle)),
+          representative_product: representativeProduct,
+          product_image: imagePath,
+          image_status: imagePath === catalogImagePlaceholders.product ? 'placeholder' : 'available',
+          badges: [...new Set(cardBadges)],
+          recommended_use: collectCategoryCardRecommendedUses(productsInCard),
+          has_lighting_units: productsInCard.some(product => product.is_lighting_unit),
+          has_accessories: productsInCard.some(product => product.is_accessory || product.is_driver || product.is_track),
+          has_calculator_ready_variant: productsInCard.some(product => product.is_calculator_ready),
+          has_missing_lumen_variant: productsInCard.some(product => !product.has_valid_lumen),
+          notes: [...new Set(productsInCard.flatMap(product => product.catalog_notes || []))],
+        };
+        categoryCard.subtitle = getCategoryCardSubtitle(categoryCard);
+        return categoryCard;
+      });
+    };
+
+    const catalogCategoryCards = groupCatalogProductsIntoCategoryCards(catalogProducts);
+
     // --- Custom MBM Logo Component ---
     const MBMLogo = () => (
       <img
@@ -1900,7 +2167,7 @@
               {[
                 { id: 'terminology', label: 'المفاهيم الفنية (Lumen, CRI...)', shortLabel: 'المفاهيم الفنية' },
                 { id: 'beam_angle', label: 'الزاوية (Beam Angle)', shortLabel: 'زاوية الإضاءة' },
-                { id: 'products', label: 'المنتجات (البحث والفلترة)', shortLabel: 'المنتجات' },
+                { id: 'products', label: 'كتالوج المنتجات', shortLabel: 'الكتالوج' },
                 { id: 'calculator', label: 'حاسبة الإضاءة', shortLabel: 'الحاسبة' },
                 { id: 'smart_system', label: 'الأنظمة الذكية (48V)', shortLabel: 'الأنظمة الذكية' }
               ].map(tab => (
@@ -2498,44 +2765,37 @@
       );
     }
 
-    function ProductSpecsChips({ product }) {
-      const chips = [];
-      const wattValue = product.watt_value || product.watt;
+    function ProductSpecsChips({ values = [], suffix = '', emptyLabel = '', tone = 'default' }) {
+      const visibleValues = values.slice(0, 5);
+      const hiddenCount = Math.max(values.length - visibleValues.length, 0);
 
-      if (wattValue) {
-        chips.push({ key: 'watt', label: `${wattValue}W`, tone: 'default' });
-      } else if (product.watt_text) {
-        chips.push({ key: 'watt-text', label: product.watt_text, tone: 'default' });
-      }
-
-      if (product.has_valid_lumen) {
-        chips.push({ key: 'lumen', label: `${product.lumen_value} lm`, tone: 'default' });
-      } else {
-        chips.push({ key: 'missing-lumen', label: 'لومن غير متوفر', tone: 'warning' });
-      }
-
-      if (product.kelvin) {
-        chips.push({ key: 'kelvin', label: product.kelvin, tone: 'default' });
-      }
-
-      if (product.cri && product.cri !== '-') {
-        chips.push({ key: 'cri', label: `CRI ${product.cri}`, tone: 'default' });
+      if (values.length === 0 && emptyLabel) {
+        return (
+          <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-bold leading-none text-amber-300">
+            {emptyLabel}
+          </span>
+        );
       }
 
       return (
         <div className="flex flex-wrap gap-1.5">
-          {chips.map(chip => (
+          {visibleValues.map(value => (
             <span
-              key={chip.key}
-              className={`rounded-md border px-2 py-1 text-[11px] font-bold leading-none ${chip.tone === 'warning'
+              key={`${suffix}-${value}`}
+              className={`rounded-md border px-2 py-1 text-[11px] font-bold leading-none ${tone === 'warning'
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
                 : 'border-slate-700 bg-slate-950 text-slate-300'
                 }`}
               dir="ltr"
             >
-              {chip.label}
+              {value}{suffix}
             </span>
           ))}
+          {hiddenCount > 0 && (
+            <span className="rounded-md border border-yellow-500/30 bg-yellow-500/10 px-2 py-1 text-[11px] font-bold leading-none text-yellow-300">
+              + المزيد
+            </span>
+          )}
         </div>
       );
     }
@@ -2576,27 +2836,304 @@
       );
     }
 
-    function ProductCard({ product }) {
-      const categoryLabel = productCategoryMeta[product.product_type]?.label || product.catalog_category || 'منتج';
-      const productTitle = product.display_name || product.short_name || product.item_name;
-      const statusLabel = product.is_calculator_ready
-        ? 'مناسب للحاسبة'
-        : product.is_driver
-          ? 'درايفر'
-          : product.is_accessory || product.is_track
-            ? 'ملحق نظام'
-            : product.is_lighting_unit
-              ? 'اللومن غير متوفر'
-              : 'غير مخصص للحاسبة';
-      const statusClass = product.is_calculator_ready
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-        : product.is_lighting_unit
-          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-          : 'border-slate-600 bg-slate-800 text-slate-300';
+    const formatDetailValue = (value, fallback = '-') => (
+      value === null || value === undefined || value === '' || value === '-' ? fallback : value
+    );
+
+    const formatVariantWatt = (product) => (
+      product.watt_text || (product.watt_value ? `${product.watt_value} وات` : formatDetailValue(product.watt))
+    );
+
+    const formatVariantLumen = (product) => (
+      product.has_valid_lumen ? `${product.lumen_value} lm` : 'غير متوفر'
+    );
+
+    const getKelvinSortValue = (value) => {
+      const match = String(value || '').match(/\d+/);
+      return match ? Number(match[0]) : 999999;
+    };
+
+    const sortCategoryVariants = (products = []) => [...products].sort((a, b) => {
+      const modelCompare = String(a.model || '').localeCompare(String(b.model || ''), 'en', { numeric: true });
+      if (modelCompare !== 0) return modelCompare;
+      const wattCompare = (a.watt_value || a.watt || 0) - (b.watt_value || b.watt || 0);
+      if (wattCompare !== 0) return wattCompare;
+      const kelvinCompare = getKelvinSortValue(a.kelvin) - getKelvinSortValue(b.kelvin);
+      if (kelvinCompare !== 0) return kelvinCompare;
+      return String(a.item_number || '').localeCompare(String(b.item_number || ''), 'en', { numeric: true });
+    });
+
+    function DetailImageBlock({ title, image, imageStatus, alt, icon = '□' }) {
+      const [imageFailed, setImageFailed] = useState(false);
+      const shouldUsePlaceholder = imageFailed || imageStatus === 'placeholder' || !image;
 
       return (
-        <article data-role="catalog-product-card" className="flex h-full flex-col rounded-xl border border-slate-700 bg-slate-900/80 p-3 shadow-lg shadow-black/10 transition-colors hover:border-yellow-500/50">
-          <ProductImage product={product} />
+        <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+          <div className="mb-2 text-xs font-bold text-slate-400">{title}</div>
+          {shouldUsePlaceholder ? (
+            <div className="flex aspect-[4/3] w-full flex-col items-center justify-center rounded-lg border border-slate-800 bg-slate-950/80 text-center">
+              <div className="text-5xl opacity-80">{icon}</div>
+              <div className="mt-3 text-sm font-bold text-slate-400">الصورة قيد التحديث</div>
+            </div>
+          ) : (
+            <img
+              src={image}
+              alt={alt}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+              className="aspect-[4/3] w-full rounded-lg border border-slate-800 bg-slate-950 object-contain p-4"
+            />
+          )}
+        </div>
+      );
+    }
+
+    function DetailChipList({ title, values = [], emptyText = 'غير متوفر', suffix = '' }) {
+      const cleanValues = values.filter(value => value !== null && value !== undefined && value !== '' && value !== '-');
+      return (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+          <div className="mb-2 text-xs font-bold text-slate-500">{title}</div>
+          {cleanValues.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {cleanValues.map(value => (
+                <span key={`${title}-${value}`} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-bold text-slate-200" dir={suffix || /\d/.test(String(value)) ? 'ltr' : 'rtl'}>
+                  {value}{suffix}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500">{emptyText}</div>
+          )}
+        </div>
+      );
+    }
+
+    function VariantStatusBadges({ product }) {
+      const statuses = [
+        product.has_valid_lumen
+          ? { label: 'لومن متوفر', className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' }
+          : { label: 'لا يحتوي Lumen', className: 'border-amber-500/30 bg-amber-500/10 text-amber-300' },
+      ];
+
+      if (product.is_calculator_ready) {
+        statuses.push({ label: 'مناسب للحاسبة', className: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200' });
+      }
+      if (product.is_driver) {
+        statuses.push({ label: 'درايفر', className: 'border-slate-600 bg-slate-800 text-slate-300' });
+      } else if (product.is_track) {
+        statuses.push({ label: 'تراك', className: 'border-slate-600 bg-slate-800 text-slate-300' });
+      } else if (product.is_accessory) {
+        statuses.push({ label: 'ملحق', className: 'border-slate-600 bg-slate-800 text-slate-300' });
+      }
+
+      return (
+        <div className="flex min-w-[8rem] flex-wrap gap-1.5">
+          {statuses.map(status => (
+            <span key={status.label} className={`rounded-full border px-2 py-1 text-[10px] font-bold leading-none ${status.className}`}>
+              {status.label}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    function CategoryDetailsHeader({ card, onClose }) {
+      return (
+        <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 p-4 backdrop-blur sm:p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="mb-2 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-bold text-yellow-300">
+                {card.card_type === 'system_accessory_group' ? `مجموعة وظيفية: ${card.display_title}` : 'فئة منتجات'}
+              </div>
+              <h2 id="category-details-title" className="text-xl font-extrabold leading-relaxed text-white sm:text-2xl">{card.display_title}</h2>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                {card.category_code && (
+                  <span className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">
+                    الفئة: <span dir="ltr" className="font-mono text-yellow-400">{card.category_code}</span>
+                  </span>
+                )}
+                <span className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">{card.variant_count} صنف / خيار متوفر</span>
+                <span className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">{card.model_count} موديلات</span>
+              </div>
+              {card.subtitle && <p className="mt-2 text-sm text-slate-400">{card.subtitle}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-2xl leading-none text-slate-300 hover:border-yellow-500 hover:text-yellow-400"
+              aria-label="إغلاق تفاصيل الفئة"
+              title="إغلاق"
+            >
+              ×
+            </button>
+          </div>
+        </header>
+      );
+    }
+
+    function CategoryDetailsImages({ card }) {
+      const representative = card.representative_product || {};
+      return (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <DetailImageBlock
+            title="صورة الفئة"
+            image={card.product_image}
+            imageStatus={card.image_status}
+            alt={`صورة فئة ${card.display_title}`}
+            icon={representative.icon || '□'}
+          />
+          <DetailImageBlock
+            title="صورة تطبيق حقيقي"
+            image={representative.application_image}
+            imageStatus={representative.image_status || 'placeholder'}
+            alt={`صورة تطبيق ${card.display_title}`}
+            icon="▣"
+          />
+        </div>
+      );
+    }
+
+    function CategorySummaryGrid({ card }) {
+      return (
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+            <div className="text-xs font-bold text-slate-500">عدد الأصناف</div>
+            <div className="mt-1 text-2xl font-extrabold text-white">{card.variant_count}</div>
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+            <div className="text-xs font-bold text-slate-500">عدد الموديلات</div>
+            <div className="mt-1 text-2xl font-extrabold text-white">{card.model_count}</div>
+          </div>
+          <DetailChipList title="الواطات المتوفرة" values={card.available_watts} emptyText="لا يوجد واط محدد" suffix="W" />
+          <DetailChipList title="ألوان الإضاءة" values={card.available_kelvins} emptyText="الألوان غير متوفرة" />
+          <DetailChipList title="الخصائص البارزة" values={card.badges} emptyText="لا توجد شارات محددة" />
+          <DetailChipList title="الاستخدامات المناسبة" values={card.recommended_use} emptyText="الاستخدامات قيد التحديث" />
+        </section>
+      );
+    }
+
+    function CategoryVariantTable({ products }) {
+      const sortedProducts = sortCategoryVariants(products);
+
+      return (
+        <section className="rounded-xl border border-slate-700 bg-slate-950 shadow-xl">
+          <div className="border-b border-slate-800 p-4">
+            <h3 className="text-lg font-bold text-white">الأصناف والموديلات داخل الفئة</h3>
+            <p className="mt-1 text-xs text-slate-500">تفاصيل SKU لكل لون وواط وموديل ضمن هذه الفئة.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1100px] text-right text-xs">
+              <thead className="bg-slate-900 text-slate-300">
+                <tr>
+                  <th className="p-3 font-bold">رقم الصنف</th>
+                  <th className="p-3 font-bold">اسم الصنف</th>
+                  <th className="p-3 font-bold">الموديل</th>
+                  <th className="p-3 font-bold">الواط</th>
+                  <th className="p-3 font-bold">الكيلفن</th>
+                  <th className="p-3 font-bold">اللومن</th>
+                  <th className="p-3 font-bold">CRI</th>
+                  <th className="p-3 font-bold">الزاوية</th>
+                  <th className="p-3 font-bold">UGR</th>
+                  <th className="p-3 font-bold">الحالة</th>
+                  <th className="p-3 font-bold">المواصفات الفنية</th>
+                  <th className="p-3 font-bold">المميزات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedProducts.map(product => (
+                  <tr key={product.item_number} className="border-t border-slate-800 align-top hover:bg-slate-900/70">
+                    <td className="p-3 font-mono text-yellow-400" dir="ltr">{product.item_number}</td>
+                    <td className="max-w-[16rem] p-3 leading-relaxed text-slate-100">{product.item_name}</td>
+                    <td className="p-3 font-mono text-slate-200" dir="ltr">{formatDetailValue(product.model)}</td>
+                    <td className="p-3 text-slate-200">{formatVariantWatt(product)}</td>
+                    <td className="p-3 font-mono text-slate-200" dir="ltr">{formatDetailValue(product.kelvin)}</td>
+                    <td className={`p-3 font-mono ${product.has_valid_lumen ? 'text-emerald-300' : 'text-amber-300'}`} dir="ltr">{formatVariantLumen(product)}</td>
+                    <td className="p-3 text-slate-300">{formatDetailValue(product.cri)}</td>
+                    <td className="p-3 text-slate-300">{formatDetailValue(product.beam_angle)}</td>
+                    <td className="p-3 text-slate-300">{formatDetailValue(product.ugr)}</td>
+                    <td className="p-3"><VariantStatusBadges product={product} /></td>
+                    <td className="max-w-[18rem] p-3 leading-relaxed text-slate-400">{formatDetailValue(product.technical_specs)}</td>
+                    <td className="max-w-[18rem] p-3 leading-relaxed text-slate-400">{formatDetailValue(product.features)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      );
+    }
+
+    function CategoryDetailsModal({ card, isOpen, onClose }) {
+      useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event) => {
+          if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [isOpen, onClose]);
+
+      if (!isOpen || !card) return null;
+
+      const detailNotes = [...new Set([
+        ...(card.notes || []),
+        ...(card.products.some(product => !product.has_valid_lumen)
+          ? ['بعض الأصناف لا تحتوي على قيمة Lumen، لذلك لا يمكن استخدامها في حاسبة عدد وحدات الإضاءة.']
+          : []),
+        ...(card.card_type === 'system_accessory_group'
+          ? ['هذه المجموعة تحتوي على ملحقات أو مكونات نظام، وليست وحدات إضاءة مباشرة.']
+          : []),
+      ])];
+
+      return (
+        <div className="fixed inset-0 z-[60] bg-black/70 p-0 backdrop-blur-sm md:p-8" onClick={onClose}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-details-title"
+            dir="rtl"
+            className="h-full max-h-full w-full overflow-hidden border border-slate-700 bg-slate-950 shadow-2xl md:mx-auto md:max-h-[90vh] md:max-w-6xl md:rounded-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="max-h-full overflow-y-auto">
+              <CategoryDetailsHeader card={card} onClose={onClose} />
+              <div className="space-y-4 p-4 sm:p-5">
+                <CategoryDetailsImages card={card} />
+                <CategorySummaryGrid card={card} />
+                <CategoryVariantTable products={card.products} />
+                {detailNotes.length > 0 && (
+                  <section className="rounded-xl border border-slate-700 bg-slate-900/80 p-4">
+                    <h3 className="text-sm font-bold text-white">ملاحظات الفئة</h3>
+                    <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-400">
+                      {detailNotes.map(note => (
+                        <li key={note} className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">{note}</li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ProductCategoryCard({ card, onOpenDetails }) {
+      const imageProduct = {
+        ...card.representative_product,
+        product_image: card.product_image,
+        image_status: card.image_status,
+        display_name: card.display_title,
+      };
+      const categoryLabel = card.card_type === 'lighting_category' ? 'فئة إضاءة' : 'ملحقات النظام';
+      const statusLabel = `${card.variant_count} صنف / خيار متوفر`;
+      const statusClass = card.has_lighting_units
+        ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300'
+        : 'border-slate-600 bg-slate-800 text-slate-300';
+
+      return (
+        <article data-role="catalog-category-card" className="flex h-full flex-col rounded-xl border border-slate-700 bg-slate-900/80 p-3 shadow-lg shadow-black/10 transition-colors hover:border-yellow-500/50">
+          <ProductImage product={imageProduct} />
 
           <div className="mt-3 flex flex-1 flex-col gap-3">
             <div className="flex items-start justify-between gap-2">
@@ -2611,32 +3148,47 @@
             <h3
               className="min-h-[3rem] text-sm font-extrabold leading-6 text-white"
               style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-              title={productTitle}
+              title={card.display_title}
             >
-              {productTitle}
+              {card.display_title}
             </h3>
 
             <div className="grid grid-cols-1 gap-1.5 rounded-lg border border-slate-800 bg-slate-950/70 p-2 text-xs">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-slate-500">الموديل</span>
-                <span className="font-mono font-bold text-slate-200" dir="ltr">{product.model && product.model !== 'N/A' ? product.model : '-'}</span>
+                <span className="text-slate-500">الفئة</span>
+                <span className="font-mono font-bold text-slate-200" dir="ltr">{card.category_code || '-'}</span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-slate-500">رقم الصنف</span>
-                <span className="font-mono font-bold text-yellow-500" dir="ltr">{product.item_number}</span>
+                <span className="text-slate-500">الموديلات</span>
+                <span className="font-bold text-yellow-500">{card.model_count} موديلات</span>
               </div>
             </div>
 
-            <ProductSpecsChips product={product} />
-            <ProductBadges product={product} />
-            <ProductUses product={product} />
+            <div>
+              <div className="mb-1.5 text-[11px] font-bold text-slate-500">الواطات المتوفرة</div>
+              <ProductSpecsChips values={card.available_watts} suffix="W" emptyLabel="لا يوجد واط محدد" />
+            </div>
+            <div>
+              <div className="mb-1.5 text-[11px] font-bold text-slate-500">ألوان الإضاءة</div>
+              <ProductSpecsChips values={card.available_kelvins} emptyLabel="اللون غير متوفر" />
+            </div>
+            <ProductBadges product={card} />
+            <ProductUses product={card} />
+            <button
+              type="button"
+              onClick={() => onOpenDetails(card)}
+              className="mt-auto min-h-10 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-300 transition-colors hover:bg-yellow-500 hover:text-slate-950"
+              aria-label={`عرض تفاصيل ${card.display_title}`}
+            >
+              عرض التفاصيل
+            </button>
           </div>
         </article>
       );
     }
 
-    function ProductCatalogCards({ products }) {
-      if (products.length === 0) {
+    function ProductCategoryCards({ cards, onOpenDetails }) {
+      if (cards.length === 0) {
         return (
           <div className="rounded-xl border border-slate-700 bg-slate-950 p-8 text-center">
             <div className="text-4xl opacity-50">⌕</div>
@@ -2648,8 +3200,8 @@
 
       return (
         <div data-role="catalog-cards-view" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map(product => (
-            <ProductCard key={product.item_number} product={product} />
+          {cards.map(card => (
+            <ProductCategoryCard key={card.card_id} card={card} onOpenDetails={onOpenDetails} />
           ))}
         </div>
       );
@@ -2660,11 +3212,29 @@
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedWatt, setSelectedWatt] = useState('All');
       const [selectedKelvin, setSelectedKelvin] = useState('All');
+      const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
       const [viewMode, setViewMode] = useState('cards');
+      const [selectedCategoryCard, setSelectedCategoryCard] = useState(null);
       const [expandedGroups, setExpandedGroups] = useState({});
+      const isCategoryModalOpen = Boolean(selectedCategoryCard);
 
       const wattOptions = [...new Set(catalogProducts.map(p => p.watt).filter(w => w !== null))].sort((a, b) => a - b);
       const kelvinOptions = [...new Set(catalogProducts.map(p => p.kelvin).filter(k => k !== null))].sort();
+      const categoryFilterOptions = [
+        { value: 'all', label: 'كل الفئات' },
+        { value: 'lighting::07-001-14', label: 'قواعد إضاءة كوب' },
+        { value: 'lighting::07-001-01', label: 'قواعد إضاءة بنل' },
+        { value: 'lighting::07-001-16', label: 'قواعد إضاءة تراك لايت' },
+        { value: 'lighting::07-001-15', label: 'قواعد إضاءة مانع توهج' },
+        { value: 'lighting::07-001-06', label: 'قواعد إضاءة سبوت لايت' },
+        { value: 'lighting::07-001-17', label: 'قواعد إضاءة ماجنتك' },
+        { value: 'system::tracks', label: 'تراكات' },
+        { value: 'system::connectors', label: 'وصلات' },
+        { value: 'system::drivers', label: 'دريفرات' },
+        { value: 'system::cables', label: 'كابلات' },
+        { value: 'system::track_accessories', label: 'ملحقات التراك' },
+        { value: 'system::other', label: 'أخرى' },
+      ];
 
       const renderCategoryImage = (group, sizeClass = 'w-14 h-14') => (
         <div className={`${sizeClass} overflow-hidden rounded-xl border border-slate-600 bg-slate-950 shadow-inner shadow-black/40 shrink-0`}>
@@ -2712,11 +3282,16 @@
 
         const matchesWatt = selectedWatt === 'All' || (p.watt !== null && p.watt.toString() === selectedWatt);
         const matchesKelvin = selectedKelvin === 'All' || (p.kelvin !== null && p.kelvin === selectedKelvin);
+        const matchesCategory = selectedCategoryFilter === 'all' ||
+          getCategoryCardGroupKey(p) === selectedCategoryFilter;
 
-        return matchesSearch && matchesWatt && matchesKelvin;
+        return matchesSearch && matchesWatt && matchesKelvin && matchesCategory;
       });
 
       const groupedProducts = groupProductsByCategory(filteredProducts);
+      const filteredCategoryCards = catalogCategoryCards.filter(card => (
+        card.products.some(product => filteredProducts.includes(product))
+      ));
       const expandAllGroups = () => {
         setExpandedGroups(Object.fromEntries(groupedProducts.map(group => [group.key, true])));
       };
@@ -2994,8 +3569,10 @@
         <div className="space-y-6 animate-fadeIn">
           <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-4 mb-2">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">المنتجات (المواصفات الفنية)</h2>
-              <div className="mt-2 text-sm text-slate-400">({groupedProducts.length}) فئة / ({filteredProducts.length}) منتج</div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white border-b border-yellow-500 pb-3 inline-block">كتالوج منتجات MBM LIGHTING</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">تصفح فئات منتجات الإضاءة، واستعرض الواطات وألوان الإضاءة المتوفرة لكل فئة.</p>
+              {viewMode === 'table' && <p className="mt-1 text-xs text-slate-500">جدول تفصيلي للمواصفات الفنية وأرقام الأصناف.</p>}
+              <div className="mt-2 text-sm text-slate-400">({filteredCategoryCards.length}) بطاقة فئة / ({groupedProducts.length}) فئة جدول / ({filteredProducts.length}) صنف</div>
               <div data-role="filtered-products-count" className="mt-1 inline-flex rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs font-bold text-slate-300">
                 المنتجات المفلترة: {filteredProducts.length} من {mbmProducts.length}
               </div>
@@ -3025,20 +3602,22 @@
                   </button>
                 </>
               )}
-              <button
-                type="button"
-                onClick={exportFilteredProductsToExcel}
-                className="min-h-10 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 sm:px-4 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 transition-colors"
-                aria-label="تصدير إلى الإكسل"
-                title="تصدير إلى الإكسل"
-              >
-                <span className="text-lg sm:hidden">⇩</span>
-                <span className="hidden sm:inline">تصدير إلى الإكسل</span>
-              </button>
+              {viewMode === 'table' && (
+                <button
+                  type="button"
+                  onClick={exportFilteredProductsToExcel}
+                  className="min-h-10 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 sm:px-4 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 transition-colors"
+                  aria-label="تصدير إلى الإكسل"
+                  title="تصدير إلى الإكسل"
+                >
+                  <span className="text-lg sm:hidden">⇩</span>
+                  <span className="hidden sm:inline">تصدير إلى الإكسل</span>
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-700 shadow-lg grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_12rem_12rem] gap-4 mb-6">
+          <div className="bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-700 shadow-lg grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_12rem_12rem] xl:grid-cols-[minmax(0,1fr)_12rem_12rem_12rem] gap-4 mb-6">
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-400 mb-2">بحث (اسم الصنف، الموديل، أو رقم الصنف)</label>
               <div className="relative">
@@ -3092,6 +3671,19 @@
                 ))}
               </select>
             </div>
+
+            <div className="w-full">
+              <label className="block text-xs font-bold text-slate-400 mb-2">الفئة</label>
+              <select
+                value={selectedCategoryFilter}
+                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-500 cursor-pointer"
+              >
+                {categoryFilterOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div data-role="product-view-mode-toggle" className="flex flex-col gap-2 rounded-xl border border-slate-700 bg-slate-900/80 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -3122,7 +3714,7 @@
             </div>
           </div>
 
-          {viewMode === 'cards' && <ProductCatalogCards products={filteredProducts} />}
+          {viewMode === 'cards' && <ProductCategoryCards cards={filteredCategoryCards} onOpenDetails={setSelectedCategoryCard} />}
 
           {viewMode === 'table' && (
             <>
@@ -3293,6 +3885,12 @@
               </button>
             </div>
           )}
+
+          <CategoryDetailsModal
+            card={selectedCategoryCard}
+            isOpen={isCategoryModalOpen}
+            onClose={() => setSelectedCategoryCard(null)}
+          />
         </div>
       );
     }

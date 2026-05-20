@@ -13,8 +13,14 @@ globalThis.__productCount = mbmProducts.length;
 globalThis.__productNumbers = mbmProducts.map((product) => product.item_number);
 globalThis.__catalogCount = catalogProducts.length;
 globalThis.__catalogProducts = catalogProducts;
-globalThis.__hasProductCatalogCards = typeof ProductCatalogCards === "function";
-globalThis.__hasProductCard = typeof ProductCard === "function";
+globalThis.__catalogFamilyCount = catalogFamilies.length;
+globalThis.__catalogFamilies = catalogFamilies;
+globalThis.__catalogCategoryCardCount = catalogCategoryCards.length;
+globalThis.__catalogCategoryCards = catalogCategoryCards;
+globalThis.__hasProductCategoryCards = typeof ProductCategoryCards === "function";
+globalThis.__hasProductCategoryCard = typeof ProductCategoryCard === "function";
+globalThis.__hasCategoryDetailsModal = typeof CategoryDetailsModal === "function";
+globalThis.__hasCategoryVariantTable = typeof CategoryVariantTable === "function";
 globalThis.__hasProductImage = typeof ProductImage === "function";
 `;
 
@@ -139,8 +145,84 @@ if (!splitLumenProduct || splitLumenProduct.lumen_value !== 2600) {
   throw new Error(`Expected 07-001-15-004 lumen_value to be 2600, got ${splitLumenProduct?.lumen_value}`);
 }
 
-if (!runtimeContext.__hasProductCatalogCards || !runtimeContext.__hasProductCard || !runtimeContext.__hasProductImage) {
-  throw new Error("Expected Phase 2A catalog card components to be defined at runtime.");
+if (!runtimeContext.__hasProductCategoryCards || !runtimeContext.__hasProductCategoryCard || !runtimeContext.__hasProductImage) {
+  throw new Error("Expected Phase 2A-Fix-2 category card components to be defined at runtime.");
+}
+
+if (!runtimeContext.__hasCategoryDetailsModal || !runtimeContext.__hasCategoryVariantTable) {
+  throw new Error("Expected Phase 2B category details modal components to be defined at runtime.");
+}
+
+if (!runtimeContext.__catalogFamilyCount || runtimeContext.__catalogFamilyCount >= runtimeContext.__catalogCount) {
+  throw new Error(`Expected catalogFamilies to group SKUs into fewer families than products, got ${runtimeContext.__catalogFamilyCount} families for ${runtimeContext.__catalogCount} products.`);
+}
+
+const familyById = new Map(runtimeContext.__catalogFamilies.map((family) => [family.family_id, family]));
+const cy107Family = [...runtimeContext.__catalogFamilies].find((family) => family.product_type === "cup_light" && family.model === "CY107");
+if (!cy107Family) {
+  throw new Error("Expected a CY107 cup_light family.");
+}
+if (cy107Family.variant_count !== 3) {
+  throw new Error(`Expected CY107 family to contain 3 variants, got ${cy107Family.variant_count}`);
+}
+if (cy107Family.family_name !== "كوب لايت CY107") {
+  throw new Error(`Expected CY107 family name to be كوب لايت CY107, got ${cy107Family.family_name}`);
+}
+if (JSON.stringify(cy107Family.available_watts) !== JSON.stringify([7])) {
+  throw new Error(`Expected CY107 watts [7], got ${JSON.stringify(cy107Family.available_watts)}`);
+}
+if (JSON.stringify(cy107Family.available_kelvins) !== JSON.stringify(["3000K", "4000K", "6500K"])) {
+  throw new Error(`Expected CY107 kelvins [3000K,4000K,6500K], got ${JSON.stringify(cy107Family.available_kelvins)}`);
+}
+if (cy107Family.badges.includes("مناسب للحاسبة") || cy107Family.badges.includes("لومن متوفر")) {
+  throw new Error("Family card badges should not include calculator/internal lumen badges.");
+}
+
+const cy107VariantNumbers = new Set(cy107Family.variants.map((product) => product.item_number));
+for (const itemNumber of ["07-001-14-001", "07-001-14-002", "07-001-14-003"]) {
+  if (!cy107VariantNumbers.has(itemNumber)) {
+    throw new Error(`CY107 family is missing variant ${itemNumber}`);
+  }
+}
+
+if (familyById.size !== runtimeContext.__catalogFamilyCount) {
+  throw new Error("Expected catalog family IDs to be unique.");
+}
+
+if (!runtimeContext.__catalogCategoryCardCount || runtimeContext.__catalogCategoryCardCount >= runtimeContext.__catalogCount) {
+  throw new Error(`Expected catalogCategoryCards to group SKUs into fewer category cards than products, got ${runtimeContext.__catalogCategoryCardCount} cards for ${runtimeContext.__catalogCount} products.`);
+}
+
+const categoryCardById = new Map(runtimeContext.__catalogCategoryCards.map((card) => [card.card_id, card]));
+const cupCategoryCard = categoryCardById.get("lighting::07-001-14");
+if (!cupCategoryCard) {
+  throw new Error("Expected a category card for lighting::07-001-14.");
+}
+if (cupCategoryCard.display_title !== "قواعد إضاءة كوب") {
+  throw new Error(`Expected cup category display title قواعد إضاءة كوب, got ${cupCategoryCard.display_title}`);
+}
+if (cupCategoryCard.variant_count !== 15) {
+  throw new Error(`Expected cup category to contain 15 SKUs, got ${cupCategoryCard.variant_count}`);
+}
+if (cupCategoryCard.model_count !== 5) {
+  throw new Error(`Expected cup category to contain 5 models, got ${cupCategoryCard.model_count}`);
+}
+if (JSON.stringify(cupCategoryCard.available_watts) !== JSON.stringify([7, 12, 20, 30, 40])) {
+  throw new Error(`Expected cup category watts [7,12,20,30,40], got ${JSON.stringify(cupCategoryCard.available_watts)}`);
+}
+if (JSON.stringify(cupCategoryCard.available_kelvins) !== JSON.stringify(["3000K", "4000K", "6500K"])) {
+  throw new Error(`Expected cup category kelvins [3000K,4000K,6500K], got ${JSON.stringify(cupCategoryCard.available_kelvins)}`);
+}
+for (const model of ["CY107", "CY112", "CY120"]) {
+  const modelCard = runtimeContext.__catalogCategoryCards.find((card) => card.display_title.includes(model));
+  if (modelCard) {
+    throw new Error(`Model ${model} should not appear as a top-level category card.`);
+  }
+}
+for (const accessoryCardId of ["system::drivers", "system::tracks", "system::connectors"]) {
+  if (!categoryCardById.has(accessoryCardId)) {
+    throw new Error(`Expected functional accessory card ${accessoryCardId}.`);
+  }
 }
 
 console.log("OK: index.html JSX compiles and exposes 84 unique products plus enriched catalog metadata at runtime.");
